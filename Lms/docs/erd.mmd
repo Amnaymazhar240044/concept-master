@@ -1,0 +1,37 @@
+---
+title: Concept Master ERD
+---
+flowchart TB
+  roles[(roles)]
+  users[(users)]
+  classes[(classes)]
+  subjects[(subjects)]
+  notes[(notes)]
+  lectures[(lectures)]
+  quizzes[(quizzes)]
+  questions[(questions)]
+  attempts[(quiz_attempts)]
+  results[(quiz_results)]
+  notifications[(notifications)]
+  sparents[(students_parents)]
+  logs[(activity_logs)]
+
+  users -->|role_id| roles
+  notes -->|subject_id| subjects
+  notes -->|class_id| classes
+  notes -->|uploaded_by| users
+  lectures -->|subject_id| subjects
+  lectures -->|class_id| classes
+  lectures -->|uploaded_by| users
+  quizzes -->|subject_id| subjects
+  quizzes -->|class_id| classes
+  quizzes -->|created_by| users
+  questions -->|quiz_id| quizzes
+  attempts -->|quiz_id| quizzes
+  attempts -->|student_id| users
+  results -->|attempt_id| attempts
+  results -->|question_id| questions
+  notifications -->|created_by| users
+  sparents -->|child_id| users
+  sparents -->|parent_id| users
+  logs -->|user_id| users

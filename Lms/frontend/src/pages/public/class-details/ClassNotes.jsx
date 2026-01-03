@@ -488,4 +488,4 @@ export default function ClassNotes() {
       )}
     </div>
   )
-} is it full code ? for classnotes?
+} 

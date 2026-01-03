@@ -361,7 +361,7 @@ export default function Notes() {
     </div>
   )
 
-  // 3. Notes View (REMOVED DOWNLOAD BUTTON - ONLY VIEW REMAINS)
+  // 3. Notes View - ONLY VIEW BUTTON, NO DOWNLOAD
   const NotesView = () => {
     const groupedNotes = groupNotesByChapter()
     const hasSearchResults = groupedNotes.some(group => 
@@ -484,7 +484,7 @@ export default function Notes() {
                                 {note.description || 'No description available'}
                               </p>
 
-                              {/* Note Footer - Author & View Button */}
+                              {/* Note Footer - ONLY VIEW BUTTON */}
                               <div className="flex items-center justify-between pt-4 border-t border-amber-200 dark:border-amber-800">
                                 {/* Author Info */}
                                 <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
@@ -494,7 +494,7 @@ export default function Notes() {
                                   </span>
                                 </div>
                                 
-                                {/* ONLY VIEW BUTTON - Download removed */}
+                                {/* ONLY VIEW BUTTON - NO DOWNLOAD */}
                                 <button
                                   onClick={() => handleViewNote(note._id || note.id)}
                                   className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"

@@ -59,7 +59,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<HomeOrDashboard />} />
-          <Route path="books" element={<Books />} />
+          <Route path="/books" element={<Books />} />
           <Route path="books/detail/:bookId" element={<BookDetail />} />
           <Route path="books/:grade" element={<Books />} />
           <Route path="classes" element={<PublicClasses />} />

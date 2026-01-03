@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StudentDashboard from './pages/student/StudentDashboard.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import Notes from './pages/student/Notes.jsx'
-import NoteView from './pages/student/NoteView.jsx' // ADD THIS IMPORT
+import NoteView from './pages/student/NoteView.jsx'
 import Lectures from './pages/student/Lectures.jsx'
 import QuizList from './pages/student/QuizList.jsx'
 import QuizDetail from './pages/student/QuizDetail.jsx'
@@ -20,7 +20,6 @@ import ManageQuizzes from './pages/admin/ManageQuizzes.jsx'
 import StudentAttempts from './pages/admin/StudentAttempts.jsx'
 import Analytics from './pages/admin/Analytics.jsx'
 import ManageUsers from './pages/admin/ManageUsers.jsx'
-// import ApproveContent from './pages/admin/ApproveContent.jsx'
 import SystemOverview from './pages/admin/SystemOverview.jsx'
 import ManageSubjects from './pages/admin/ManageSubjects.jsx'
 import ManageChapters from './pages/admin/ManageChapters.jsx'
@@ -51,6 +50,7 @@ function ProtectedRoute({ children, roles }) {
   if (roles && roles.length && !roles.includes(user.role)) return <Navigate to="/" replace />
   return children
 }
+
 export default function App() {
   return (
     <AuthProvider>
@@ -83,54 +83,63 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* Student */}
-         {/* Student Class Details */}
-<Route path="student/class/:id" element={
-  <ProtectedRoute roles={["student"]}>
-    <ClassLayout />
-  </ProtectedRoute>
-}>
-  <Route index element={<ClassOverview />} />
-  <Route path="notes" element={<ClassNotes />} />
-  <Route path="lectures" element={<ClassLectures />} />
-  <Route path="quizzes" element={<ClassQuizzes />} />
-  <Route path="books" element={<ClassBooks />} />
-</Route>
-          {/* ADD THE NOTEVIEW ROUTE HERE */}
+          {/* Student Routes */}
+          {/* Student Class Details */}
+          <Route path="student/class/:id" element={
+            <ProtectedRoute roles={["student"]}>
+              <ClassLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ClassOverview />} />
+            <Route path="notes" element={<ClassNotes />} />
+            <Route path="lectures" element={<ClassLectures />} />
+            <Route path="quizzes" element={<ClassQuizzes />} />
+            <Route path="books" element={<ClassBooks />} />
+          </Route>
+
+          {/* Note View Route */}
           <Route path="student/notes/:classId/view/:id" element={
             <ProtectedRoute roles={["student"]}>
               <NoteView />
             </ProtectedRoute>
           } />
           
+          {/* Student Books Routes - ADDED THESE TWO LINES */}
+          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          
+          {/* Student Notes Routes */}
           <Route path="student/notes" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/notes/:classId" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
+          
+          {/* Student Lectures Routes */}
           <Route path="student/lectures" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
           <Route path="student/lectures/:classId" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
+          
+          {/* Student Quizzes Routes */}
           <Route path="student/quizzes" element={<ProtectedRoute roles={["student"]}><QuizList /></ProtectedRoute>} />
           <Route path="student/quizzes/:classId" element={<ProtectedRoute roles={["student"]}><QuizList /></ProtectedRoute>} />
           <Route path="student/quiz/:id" element={<ProtectedRoute roles={["student"]}><QuizDetail /></ProtectedRoute>} />
           <Route path="student/quiz/:id/attempt" element={<ProtectedRoute roles={["student"]}><AttemptQuiz /></ProtectedRoute>} />
+          
+          {/* Student Results & Performance */}
           <Route path="student/results" element={<ProtectedRoute roles={["student"]}><Results /></ProtectedRoute>} />
           <Route path="student/performance" element={<ProtectedRoute roles={["student"]}><Performance /></ProtectedRoute>} />
           <Route path="student/ai-tutor" element={<ProtectedRoute roles={["student"]}><ConceptMasterAI /></ProtectedRoute>} />
 
-          {/* Teacher Routes moved to Admin */}
-
-          {/* Parent role removed */}
-
-          {/* Admin */}
+          {/* Admin Routes */}
           <Route path="admin/manage-users" element={<ProtectedRoute roles={["admin"]}><ManageUsers /></ProtectedRoute>} />
           <Route path="admin/manage-subjects" element={<ProtectedRoute roles={["admin"]}><ManageSubjects /></ProtectedRoute>} />
           <Route path="admin/manage-chapters" element={<ProtectedRoute roles={["admin"]}><ManageChapters /></ProtectedRoute>} />
           <Route path="admin/manage-notes" element={<ProtectedRoute roles={["admin"]}><ManageNotes /></ProtectedRoute>} />
           <Route path="admin/manage-classes" element={<ProtectedRoute roles={["admin"]}><ManageClasses /></ProtectedRoute>} />
           <Route path="admin/manage-books" element={<ProtectedRoute roles={["admin"]}><ManageBooks /></ProtectedRoute>} />
+          
           {/* Feature Control Route */}
           <Route path="admin/feature-control" element={<ProtectedRoute roles={["admin"]}><FeatureControl /></ProtectedRoute>} />
           <Route path="admin/system-overview" element={<ProtectedRoute roles={["admin"]}><SystemOverview /></ProtectedRoute>} />
 
-          {/* Migrated Teacher Features to Admin */}
+          {/* Admin/Teacher Features */}
           <Route path="admin/upload-notes" element={<ProtectedRoute roles={["admin"]}><UploadNotes /></ProtectedRoute>} />
           <Route path="admin/upload-lectures" element={<ProtectedRoute roles={["admin"]}><UploadLectures /></ProtectedRoute>} />
           <Route path="admin/create-quiz" element={<ProtectedRoute roles={["admin"]}><CreateQuiz /></ProtectedRoute>} />
@@ -140,9 +149,9 @@ export default function App() {
 
           {/* Settings - Available to all authenticated users */}
           <Route path="settings" element={<ProtectedRoute roles={["student", "admin"]}><Settings /></ProtectedRoute>} />
-        </Route >
-      </Routes >
-    </AuthProvider >
+        </Route>
+      </Routes>
+    </AuthProvider>
   )
 }
 
@@ -150,7 +159,6 @@ function DashRouter() {
   const { user } = useAuth()
   if (!user) return null
   if (user.role === 'student') return <StudentDashboard />
-
   if (user.role === 'admin') return <AdminDashboard />
   return null
 }

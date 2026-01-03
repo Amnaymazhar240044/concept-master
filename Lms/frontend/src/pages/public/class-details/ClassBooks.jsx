@@ -79,9 +79,8 @@ export default function ClassBooks() {
         
         let imagePath = book.coverImage;
         if (imagePath.startsWith('/')) imagePath = imagePath.substring(1);
-        if (imagePath.startsWith('uploads/')) return `http://localhost:5000/${imagePath}`;
-        
-        return `http://localhost:5000/uploads/books/${imagePath}`;
+        if (imagePath.startsWith('uploads/')) return `${import.meta.env.VITE_API_BASE_URL}/${imagePath}`;
+return `${import.meta.env.VITE_API_BASE_URL}/uploads/books/${imagePath}`;
     };
 
     const addToCart = (book, e) => {

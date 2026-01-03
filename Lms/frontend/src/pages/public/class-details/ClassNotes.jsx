@@ -190,7 +190,7 @@ export default function ClassNotes() {
                                                             <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                                                         </div>
                                                         <a
-                                                            href={`http://localhost:5000${note.file_path}`}
+                                                       href={`${import.meta.env.VITE_API_BASE_URL}${note.file_path}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"

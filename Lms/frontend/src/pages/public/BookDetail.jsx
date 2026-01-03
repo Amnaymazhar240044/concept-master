@@ -94,7 +94,7 @@ export default function BookDetail() {
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                             <div className="relative aspect-[3/4]">
                                 <img
-                                    src={book.coverImage ? `http://localhost:5000${book.coverImage}` : '/images/books/placeholder.jpg'}
+                                    src={book.coverImage ? `${import.meta.env.VITE_API_BASE_URL}${book.coverImage}` : '/images/books/placeholder.jpg'}
                                     alt={book.title}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {

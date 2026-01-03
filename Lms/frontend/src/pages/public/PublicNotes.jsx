@@ -207,7 +207,7 @@ export default function PublicNotes() {
                         </div>
 
                         <a
-                          href={`http://localhost:5000${note.file_path}`}
+                        href={`${import.meta.env.VITE_API_BASE_URL}${note.file_path}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-300 shadow-md hover:shadow-lg"

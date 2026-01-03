@@ -15,7 +15,7 @@ const Reviews = () => {
 
     const fetchReviews = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/reviews');
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reviews`);
             if (!response.ok) throw new Error('Failed to fetch reviews');
             const data = await response.json();
             setReviews(data);
@@ -37,7 +37,7 @@ const Reviews = () => {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:5000/api/reviews', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

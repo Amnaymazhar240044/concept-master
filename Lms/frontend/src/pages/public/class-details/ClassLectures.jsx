@@ -276,7 +276,7 @@ export default function ClassNotes() {
                                                             })}</span>
                                                         </div>
                                                         <a
-                                                            href={`http://localhost:5000${note.file_path}`}
+                                                            href={`${import.meta.env.VITE_API_BASE_URL}${note.file_path}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors group/link"
@@ -290,7 +290,7 @@ export default function ClassNotes() {
                                                 {/* Download button overlay */}
                                                 <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <a
-                                                        href={`http://localhost:5000${note.file_path}`}
+                                                        href={`${import.meta.env.VITE_API_BASE_URL}${note.file_path}`}
                                                         download
                                                         className="p-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:shadow-lg transition-all"
                                                         onClick={(e) => e.stopPropagation()}

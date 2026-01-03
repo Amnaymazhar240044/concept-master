@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import { motion } from 'framer-motion'
 import { 
-  FileText, Search, BookOpen, FolderOpen, 
+  FileText, Search, BookOpen, 
   ArrowLeft, Calendar, User, Layers, Crown,
   ChevronRight, Eye
 } from 'lucide-react'
@@ -136,8 +136,7 @@ export default function Notes() {
     grouped.uncategorized = {
       chapter: { 
         title: 'General Notes', 
-        _id: 'uncategorized',
-        description: 'Notes not assigned to any chapter'
+        _id: 'uncategorized'
       },
       notes: []
     }
@@ -362,7 +361,7 @@ export default function Notes() {
     </div>
   )
 
-  // 3. Notes View
+  // 3. Notes View (REMOVED DOWNLOAD BUTTON - ONLY VIEW REMAINS)
   const NotesView = () => {
     const groupedNotes = groupNotesByChapter()
     const hasSearchResults = groupedNotes.some(group => 
@@ -372,9 +371,11 @@ export default function Notes() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
+          {/* Header Section */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
+                {/* Back Button */}
                 <button
                   onClick={handleBackToSubjects}
                   className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 mb-4"
@@ -382,6 +383,8 @@ export default function Notes() {
                   <ArrowLeft className="w-4 h-4" />
                   Back to Subjects
                 </button>
+                
+                {/* Main Title */}
                 <h1 className="text-4xl md:text-5xl font-black text-amber-900 dark:text-amber-50 mb-3">
                   {selectedSubject.name} Notes
                 </h1>
@@ -390,13 +393,14 @@ export default function Notes() {
                 </p>
               </div>
               
+              {/* Search Bar */}
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <Search className="w-5 h-5 text-amber-500" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Search notes..."
+                  placeholder="Search anything..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-amber-900 dark:text-amber-100 placeholder-amber-500/60 w-full sm:w-64"
@@ -405,6 +409,7 @@ export default function Notes() {
             </div>
           </div>
 
+          {/* Loading State */}
           {loading ? (
             <div className="space-y-8">
               {[...Array(3)].map((_, i) => (
@@ -420,6 +425,7 @@ export default function Notes() {
             </div>
           ) : (
             <div className="space-y-8">
+              {/* Notes by Chapter */}
               {groupedNotes.map((group) => {
                 const filteredNotes = filterNotes(group.notes)
                 if (filteredNotes.length === 0) return null
@@ -431,6 +437,7 @@ export default function Notes() {
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-4"
                   >
+                    {/* Chapter Header */}
                     <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-800">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center">
                         <Layers className="w-5 h-5 text-white" />
@@ -445,6 +452,7 @@ export default function Notes() {
                       </div>
                     </div>
 
+                    {/* Notes Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {filteredNotes.map((note) => (
                         <motion.div
@@ -455,6 +463,7 @@ export default function Notes() {
                         >
                           <div className="h-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden hover:shadow-xl transition-all duration-300">
                             <div className="p-6 h-full flex flex-col">
+                              {/* Note Header with Date */}
                               <div className="flex items-start justify-between mb-4">
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center">
                                   <FileText className="w-6 h-6 text-white" />
@@ -465,29 +474,33 @@ export default function Notes() {
                                 </div>
                               </div>
 
+                              {/* Note Title */}
                               <h3 className="text-lg font-bold mb-3 text-amber-900 dark:text-amber-50 line-clamp-2">
-                                {note.title}
+                                {note.title || 'Untitled Note'}
                               </h3>
 
+                              {/* Note Description */}
                               <p className="text-sm text-amber-700 dark:text-amber-300 mb-4 flex-1 line-clamp-3">
                                 {note.description || 'No description available'}
                               </p>
 
+                              {/* Note Footer - Author & View Button */}
                               <div className="flex items-center justify-between pt-4 border-t border-amber-200 dark:border-amber-800">
-                                {note.uploaded_by?.name && (
-                                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                                    <User className="w-4 h-4" />
-                                    <span>{note.uploaded_by.name}</span>
-                                  </div>
-                                )}
+                                {/* Author Info */}
+                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                                  <User className="w-4 h-4" />
+                                  <span>
+                                    {note.uploaded_by?.name || 'System Administrator'}
+                                  </span>
+                                </div>
                                 
-                                {/* Only View button - Download moved to details page */}
+                                {/* ONLY VIEW BUTTON - Download removed */}
                                 <button
                                   onClick={() => handleViewNote(note._id || note.id)}
-                                  className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
                                 >
                                   <Eye className="w-4 h-4" />
-                                  View Details
+                                  View
                                 </button>
                               </div>
                             </div>
@@ -499,6 +512,7 @@ export default function Notes() {
                 )
               })}
 
+              {/* Empty State */}
               {!hasSearchResults && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}

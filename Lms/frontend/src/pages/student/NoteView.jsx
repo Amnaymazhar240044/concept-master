@@ -1,457 +1,478 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import api from '../../lib/api'
+import { useEffect, useState } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
+import api from '../../../lib/api'
+import { SERVER_ORIGIN } from '../../../lib/config'
 import { motion } from 'framer-motion'
-import {
-  ArrowLeft, Download, FileText, Calendar, User,
-  BookOpen, Folder, Award, Info, Eye, Book,
-  GraduationCap, Clock, File, Printer, Share2,
-  Maximize2, ExternalLink, ChevronLeft, ChevronRight,
-  FileArchive, FileType
+import { 
+  FileText, Download, Search, BookOpen, FolderOpen, 
+  ArrowLeft, Calendar, User, Layers, Crown, Sparkles,
+  Brain, Target, Award, School, Clock, GraduationCap,
+  ChevronRight, Star, Zap, FileDown, Eye, Info, Book,
+  Grid, List, Filter, TrendingUp, Users as UsersIcon,
+  BarChart3, Shield, CheckCircle, Home
 } from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
 
-export default function NoteView() {
-  const { classId, id } = useParams()
+export default function ClassNotes() {
+  const { classData } = useOutletContext()
+  const { classId } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const [note, setNote] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [downloading, setDownloading] = useState(false)
-  const [relatedNotes, setRelatedNotes] = useState([])
-  const [fullscreen, setFullscreen] = useState(false)
+  
+  const [classes, setClasses] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [selectedSubject, setSelectedSubject] = useState(null)
 
+  const [chapters, setChapters] = useState([])
+  const [notes, setNotes] = useState([])
+
+  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [featureSettings, setFeatureSettings] = useState([])
+  const [checkingFeature, setCheckingFeature] = useState(true)
+  const [viewMode, setViewMode] = useState('grid')
+
+  // Get file icon based on note type
+  const getFileIcon = (note) => {
+    if (note.is_descriptive_only || !note.file_path) {
+      return <Book className="w-6 h-6 text-blue-500" />
+    }
+    return <FileText className="w-6 h-6 text-amber-500" />
+  }
+
+  // Load Subjects when Class is selected
   useEffect(() => {
-    fetchNote()
-  }, [id])
-
-  const fetchNote = async () => {
-    try {
+    const loadSubjects = async () => {
+      if (!classId) return
       setLoading(true)
-      const { data } = await api.get(`/notes/${id}`)
-      setNote(data)
-
-      // Fetch related notes from same subject
-      if (data.subject_id) {
-        const res = await api.get('/notes', {
-          params: {
-            subject_id: data.subject_id._id || data.subject_id,
-            class_id: data.class_id?._id || data.class_id,
-            limit: 3
-          }
-        })
-        setRelatedNotes(res.data.data?.filter(n => n._id !== data._id) || [])
-      }
-    } catch (error) {
-      console.error('Error fetching note:', error)
-    } finally {
+      try {
+        const s = await api.get('/subjects')
+        setSubjects(s.data || [])
+      } catch { }
       setLoading(false)
     }
-  }
+    loadSubjects()
+  }, [classId])
 
-  const handleDownload = async () => {
-    if (!note.file_path || note.is_descriptive_only) return
-
-    setDownloading(true)
-    try {
-      const response = await api.get(`/notes/${id}/download`, {
-        responseType: 'blob'
-      })
-
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', note.file_name || `note-${note.title}.pdf`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Download error:', error)
-      alert('Failed to download file. Please try again.')
-    } finally {
-      setDownloading(false)
+  // Load Chapters and Notes when Subject is selected
+  useEffect(() => {
+    const loadContent = async () => {
+      if (!classId || !selectedSubject) return
+      setLoading(true)
+      try {
+        const [c, n] = await Promise.all([
+          api.get('/chapters', { params: { class_id: classId, subject_id: selectedSubject._id || selectedSubject.id } }),
+          api.get('/notes', { params: { class_id: classId, subject_id: selectedSubject._id || selectedSubject.id } })
+        ])
+        setChapters(c.data || [])
+        setNotes(n.data.data || n.data || [])
+      } catch (e) {
+        console.error("Failed to load content", e)
+      }
+      setLoading(false)
     }
-  }
+    loadContent()
+  }, [classId, selectedSubject])
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  // Group notes by chapter
+  const groupedNotes = () => {
+    const grouped = {}
+
+    // Initialize groups for all chapters
+    chapters.forEach(ch => {
+      grouped[ch._id || ch.id] = {
+        chapter: ch,
+        notes: []
+      }
+    })
+
+    // Add "Uncategorized" group
+    grouped['uncategorized'] = {
+      chapter: { title: 'General Notes', _id: 'uncategorized' },
+      notes: []
+    }
+
+    // Distribute notes
+    notes.forEach(note => {
+      const noteChapterId = note.chapter_id?._id || note.chapter_id
+      if (noteChapterId && grouped[noteChapterId]) {
+        grouped[noteChapterId].notes.push(note)
+      } else {
+        grouped['uncategorized'].notes.push(note)
+      }
+    })
+
+    return Object.values(grouped).sort((a, b) => {
+      if (a.chapter._id === 'uncategorized') return 1
+      if (b.chapter._id === 'uncategorized') return -1
+      return (a.chapter.order || 0) - (b.chapter.order || 0)
     })
   }
 
-  const getFileIcon = () => {
-    if (!note) return <File className="w-8 h-8" />
-
-    if (note.is_descriptive_only) {
-      return <Book className="w-8 h-8 text-blue-500" />
-    }
-
-    switch (note.file_type) {
-      case 'pdf':
-        return <FileText className="w-8 h-8 text-red-500" />
-      case 'doc':
-      case 'docx':
-        return <FileType className="w-8 h-8 text-blue-500" />
-      case 'ppt':
-      case 'pptx':
-        return <FileArchive className="w-8 h-8 text-orange-500" />
-      case 'txt':
-        return <FileText className="w-8 h-8 text-gray-500" />
-      default:
-        return <FileText className="w-8 h-8 text-gray-500" />
-    }
-  }
-
-  const handlePrint = () => {
-    if (note.file_type === 'pdf' && note.file_path) {
-      window.open(`${window.location.origin}${note.file_path}`, '_blank')
-    } else {
-      window.print()
-    }
-  }
-
-  if (loading) {
+  // 1. Subject Selection View
+  if (!selectedSubject) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-amber-700 dark:text-amber-300">Loading note...</p>
+      <div className="min-h-screen">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+          <div>
+            <Link
+              to={`/class/${classId}`}
+              className="inline-flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 mb-4 group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Overview</span>
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-2">
+              {classData?.title || classData?.name} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">Notes</span>
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Select a subject to view study materials
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
+              <input
+                type="text"
+                placeholder="Search subjects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 outline-none w-full lg:w-64"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{subjects.length}</div>
+            <div className="text-sm text-amber-600 dark:text-amber-400">Subjects</div>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {subjects.reduce((acc, sub) => acc + (sub.chapterCount || 0), 0)}
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-400">Chapters</div>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {subjects.reduce((acc, sub) => acc + (sub.noteCount || 0), 0)}
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-400">Total Notes</div>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
+            <div className="text-sm text-amber-600 dark:text-amber-400">Access</div>
+          </div>
+        </div>
+
+        {/* Subjects Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="h-48 bg-white dark:bg-gray-800 rounded-2xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subjects
+              .filter(subject => 
+                subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                subject.description?.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((subject, index) => (
+              <motion.div
+                key={subject._id || subject.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => setSelectedSubject(subject)}
+                className="cursor-pointer group"
+              >
+                <div className="h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-amber-200 dark:border-amber-800 overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <BookOpen className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-amber-900 dark:text-amber-50 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                          {subject.name}
+                        </h3>
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                          Study notes & materials
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-amber-100 dark:border-amber-800">
+                      <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                        <Layers className="w-4 h-4" />
+                        <span>{subject.chapterCount || 'Multiple'} chapters</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>View Notes</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Features Section */}
+        <div className="mt-12 pt-8 border-t border-amber-200 dark:border-amber-800">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Premium Study Materials</h2>
+            <p className="text-gray-600 dark:text-gray-400">Everything you need for academic success</p>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: CheckCircle, title: 'Comprehensive', desc: 'Covers all topics in detail' },
+              { icon: TrendingUp, title: 'Updated', desc: 'Regularly revised content' },
+              { icon: Shield, title: 'Verified', desc: 'Expert-reviewed materials' },
+              { icon: BarChart3, title: 'Structured', desc: 'Organized by difficulty' },
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center mb-3">
+                  <item.icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{item.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{item.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
-  if (!note) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-amber-200 dark:border-amber-800 p-8">
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
-              <Info className="w-10 h-10 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Note Not Found
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                The note you're looking for doesn't exist or has been removed.
-              </p>
-            </div>
+  // 2. Notes & Chapters View
+  const groups = groupedNotes()
+  const filteredGroups = groups.filter(group => 
+    group.notes.some(note =>
+      note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.chapter.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  )
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+        <div>
+          <button
+            onClick={() => setSelectedSubject(null)}
+            className="inline-flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 mb-4 group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Back to Subjects</span>
+          </button>
+          <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-2">
+            {selectedSubject.name} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">Notes</span>
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            {classData?.title || classData?.name} • All study materials
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
+            <input
+              type="text"
+              placeholder="Search notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 outline-none w-full lg:w-64"
+            />
+          </div>
+          <div className="hidden sm:flex items-center gap-1 p-1 bg-amber-50 dark:bg-gray-800 rounded-xl">
             <button
-              onClick={() => navigate(`/student/notes/${classId}`)}
-              className="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold rounded-xl transition-all"
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
             >
-              <ArrowLeft className="w-4 h-4 inline mr-2" />
-              Back to Notes
+              <Grid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            >
+              <List className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
-    )
-  }
 
-  const isDescriptive = note.is_descriptive_only || !note.file_path
-  const hasFile = !isDescriptive && note.file_path
-  const isPDF = note.file_type === 'pdf' && hasFile
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Navigation */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(`/student/notes/${classId}`)}
-            className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Notes
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content - Left 2/3 */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Note Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-4 rounded-xl ${isDescriptive ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                      {getFileIcon()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {note.title}
-                        </h1>
-                        {isDescriptive && (
-                          <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            <Info className="w-3 h-3 inline mr-1" />
-                            Descriptive Note
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {note.subject_id && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            <BookOpen className="w-3 h-3 mr-1" />
-                            {note.subject_id.name}
-                          </span>
-                        )}
-                        {note.class_id && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
-                            <GraduationCap className="w-3 h-3 mr-1" />
-                            {note.class_id.title}
-                          </span>
-                        )}
-                        {note.chapter_id && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
-                            <Folder className="w-3 h-3 mr-1" />
-                            {note.chapter_id.title}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* File Info Card (only for notes with files) */}
-                {hasFile && (
-                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-white dark:bg-gray-700 rounded-lg">
-                          {getFileIcon()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {note.file_name || 'File Attachment'}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {note.file_type?.toUpperCase()} • 
-                            {note.file_size ? ` ${Math.round(note.file_size / 1024)}KB` : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isPDF && (
-                          <button
-                            onClick={() => window.open(`${window.location.origin}${note.file_path}`, '_blank')}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                            title="Open in new tab"
-                          >
-                            <ExternalLink className="w-4 h-4 text-gray-500" />
-                          </button>
-                        )}
-                        <button
-                          onClick={handlePrint}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                          title="Print"
-                        >
-                          <Printer className="w-4 h-4 text-gray-500" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Description */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <Info className="w-5 h-5 text-amber-500" />
-                    Description
-                  </h3>
-                  <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4">
-                    {note.description ? (
-                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                        {note.description}
-                      </p>
-                    ) : (
-                      <p className="text-gray-500 dark:text-gray-400 italic">
-                        No description provided for this note.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  {/* Download Button (only for notes with files) */}
-                  {hasFile && (
-                    <button
-                      onClick={handleDownload}
-                      disabled={downloading}
-                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {downloading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-5 h-5" />
-                          Download File
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Share Button */}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href)
-                      alert('Link copied to clipboard!')
-                    }}
-                    className="px-6 py-3 border-2 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 font-semibold rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all flex items-center gap-2"
-                  >
-                    <Share2 className="w-5 h-5" />
-                    Share
-                  </button>
-                </div>
+      {/* Notes Content */}
+      {loading ? (
+        <div className="space-y-8">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-4">
+              <div className="h-8 w-48 bg-white dark:bg-gray-800 rounded animate-pulse"></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="h-64 bg-white dark:bg-gray-800 rounded-2xl animate-pulse"></div>
+                ))}
               </div>
-            </motion.div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {filteredGroups.map((group) => {
+            // Filter notes within group based on search
+            const groupNotes = group.notes.filter(note =>
+              note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              note.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
 
-            {/* PDF Viewer (only for PDF files) */}
-            {isPDF && (
+            if (groupNotes.length === 0) return null
+
+            return (
               <motion.div
+                key={group.chapter._id || group.chapter.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden ${fullscreen ? 'fixed inset-4 z-50' : ''}`}
+                className="space-y-4"
               >
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-red-500" />
-                    PDF Preview
-                  </h3>
-                  <button
-                    onClick={() => setFullscreen(!fullscreen)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                    title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                  >
-                    {fullscreen ? (
-                      <Maximize2 className="w-4 h-4 text-gray-500" />
-                    ) : (
-                      <Maximize2 className="w-4 h-4 text-gray-500" />
-                    )}
-                  </button>
+                {/* Chapter Header */}
+                <div className="flex items-center gap-4 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-amber-200 dark:border-amber-800">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center">
+                    <Layers className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-50">
+                      {group.chapter.title}
+                    </h2>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      {groupNotes.length} note{groupNotes.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
-                <div className={`${fullscreen ? 'h-[calc(100vh-8rem)]' : 'h-96'}`}>
-                  <iframe
-                    src={`${window.location.origin}${note.file_path}`}
-                    className="w-full h-full border-0"
-                    title="PDF Preview"
-                  />
+
+                {/* Notes Grid */}
+                <div className={`gap-6 ${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'flex flex-col'}`}>
+                  {groupNotes.map((note) => {
+                    const isDescriptive = note.is_descriptive_only || !note.file_path
+                    const hasFile = !isDescriptive && note.file_path
+                    
+                    return (
+                      <motion.div
+                        key={note._id || note.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className={`${viewMode === 'list' ? 'w-full' : 'h-full'}`}
+                      >
+                        <div className={`h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden hover:shadow-xl transition-all duration-300 ${viewMode === 'grid' ? 'hover:-translate-y-1' : ''}`}>
+                          <div className="p-6 h-full flex flex-col">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                isDescriptive 
+                                  ? 'bg-gradient-to-br from-blue-600 to-blue-500' 
+                                  : 'bg-gradient-to-br from-amber-600 to-orange-600'
+                              }`}>
+                                {getFileIcon(note)}
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {note.createdAt ? new Date(note.createdAt).toLocaleDateString() : 
+                                   note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Unknown'}
+                                </div>
+                                {note.views > 100 && (
+                                  <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300">
+                                    <Eye className="w-3 h-3" />
+                                    <span>Popular</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <h3 className="text-lg font-bold mb-3 text-amber-900 dark:text-amber-50 line-clamp-2">
+                              {note.title}
+                            </h3>
+
+                            <p className="text-sm text-amber-700/80 dark:text-amber-300/80 mb-4 flex-1 line-clamp-3">
+                              {note.description || 'Comprehensive notes covering key concepts and examples.'}
+                            </p>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-amber-100 dark:border-amber-800">
+                              {note.uploaded_by?.name && (
+                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                                  <User className="w-4 h-4" />
+                                  <span>{note.uploaded_by.name}</span>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center gap-2">
+                                {/* VIEW DETAILS button */}
+                                <button
+                                  onClick={() => navigate(`/class/${classId}/notes/view/${note._id || note.id}`)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg hover:scale-105"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Details
+                                </button>
+                                
+                                {/* DOWNLOAD button - only shown if note has a file */}
+                                {hasFile && (
+                                  <a
+                                    href={`${import.meta.env.VITE_API_BASE_URL || SERVER_ORIGIN}/notes/${note._id || note.id}/download`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl font-semibold transition-all hover:shadow-lg hover:scale-105"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    Download
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
                 </div>
               </motion.div>
-            )}
-          </div>
+            )
+          })}
 
-          {/* Sidebar - Right 1/3 */}
-          <div className="space-y-6">
-            {/* Note Info */}
+          {filteredGroups.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 p-5"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700"
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5 text-amber-500" />
-                Note Details
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl flex items-center justify-center">
+                <FileText className="w-10 h-10 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                {searchTerm ? 'No notes found' : 'No notes available yet'}
               </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Uploaded By</p>
-                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    {note.uploaded_by?.name || 'Teacher'}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Upload Date</p>
-                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {formatDate(note.createdAt)}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
-                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    {note.approved ? 'Approved' : 'Pending Approval'}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Type</p>
-                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    {getFileIcon()}
-                    {isDescriptive ? 'Descriptive Note' : `${note.file_type?.toUpperCase()} File`}
-                  </p>
-                </div>
-              </div>
+              <p className="text-amber-700/80 dark:text-amber-300/80 mb-6 max-w-md mx-auto">
+                {searchTerm ? 'Try adjusting your search terms' : 'Notes will appear here once uploaded for this subject'}
+              </p>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-md"
+                >
+                  <Search className="w-4 h-4" />
+                  Clear Search
+                </button>
+              )}
             </motion.div>
-
-            {/* Related Notes */}
-            {relatedNotes.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 p-5"
-              >
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-amber-500" />
-                  Related Notes
-                </h3>
-                
-                <div className="space-y-3">
-                  {relatedNotes.map((relatedNote) => (
-                    <div
-                      key={relatedNote._id || relatedNote.id}
-                      onClick={() => navigate(`/student/notes/${classId}/view/${relatedNote._id || relatedNote.id}`)}
-                      className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors border border-gray-100 dark:border-gray-700"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${relatedNote.is_descriptive_only ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                          {relatedNote.is_descriptive_only ? (
-                            <Book className="w-4 h-4 text-blue-500" />
-                          ) : (
-                            <FileText className="w-4 h-4 text-amber-500" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
-                            {relatedNote.title}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {relatedNote.is_descriptive_only ? 'Descriptive' : relatedNote.file_type?.toUpperCase() || 'File'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

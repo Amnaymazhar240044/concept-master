@@ -10,7 +10,7 @@ import {
   Brain, Target, Award, School, Clock, GraduationCap,
   ChevronRight, Star, Zap, FileDown, Eye, Info, Book,
   Grid, List, Filter, TrendingUp, Users as UsersIcon,
-  BarChart3, Shield, CheckCircle, Home
+  BarChart3, Shield, CheckCircle, Home, ExternalLink
 } from 'lucide-react'
 
 export default function ClassNotes() {
@@ -412,16 +412,27 @@ export default function ClassNotes() {
                               )}
                               
                               <div className="flex items-center gap-2">
-                                {/* VIEW button */}
-                                <a
-                                  href={`${import.meta.env.VITE_API_BASE_URL || SERVER_ORIGIN}${note.file_path}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                {/* VIEW DETAILS button - navigates to STUDENT note view */}
+                                <button
+                                  onClick={() => navigate(`/student/notes/${classId}/view/${note._id || note.id}`)}
                                   className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg hover:scale-105"
                                 >
                                   <Eye className="w-4 h-4" />
-                                  View
-                                </a>
+                                  View Details
+                                </button>
+                                
+                                {/* QUICK VIEW button - opens file directly */}
+                                {hasFile && (
+                                  <a
+                                    href={`${import.meta.env.VITE_API_BASE_URL || SERVER_ORIGIN}${note.file_path}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold transition-all hover:shadow-lg hover:scale-105"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Quick View
+                                  </a>
+                                )}
                                 
                                 {/* DOWNLOAD button - only shown if note has a file */}
                                 {hasFile && (
@@ -477,4 +488,4 @@ export default function ClassNotes() {
       )}
     </div>
   )
-}
+} is it full code ? for classnotes?

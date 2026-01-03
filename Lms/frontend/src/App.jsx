@@ -59,9 +59,16 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<HomeOrDashboard />} />
-          <Route path="/books" element={<Books />} />
+          
+          {/* ⬇️⬇️⬇️ STUDENT BOOKS ROUTES MUST COME FIRST ⬇️⬇️⬇️ */}
+          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          
+          {/* ⬇️⬇️⬇️ PUBLIC ROUTES COME AFTER ⬇️⬇️⬇️ */}
+          <Route path="books" element={<Books />} />
           <Route path="books/detail/:bookId" element={<BookDetail />} />
           <Route path="books/:grade" element={<Books />} />
+          
           <Route path="classes" element={<PublicClasses />} />
           <Route path="notes" element={<PublicNotes />} />
           <Route path="pricing" element={<Pricing />} />
@@ -83,10 +90,6 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* Student Routes */}
-          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          
           {/* Student Class Details */}
           <Route path="student/class/:classId" element={
             <ProtectedRoute roles={["student"]}>

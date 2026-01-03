@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StudentDashboard from './pages/student/StudentDashboard.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import Notes from './pages/student/Notes.jsx'
+import NoteView from './pages/student/NoteView.jsx' // ADD THIS IMPORT
 import Lectures from './pages/student/Lectures.jsx'
 import QuizList from './pages/student/QuizList.jsx'
 import QuizDetail from './pages/student/QuizDetail.jsx'
@@ -84,8 +85,15 @@ export default function App() {
 
           {/* Student */}
           <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-<Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-
+          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          
+          {/* ADD THE NOTEVIEW ROUTE HERE */}
+          <Route path="student/notes/:classId/view/:id" element={
+            <ProtectedRoute roles={["student"]}>
+              <NoteView />
+            </ProtectedRoute>
+          } />
+          
           <Route path="student/notes" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/notes/:classId" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/lectures" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />

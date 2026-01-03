@@ -17,27 +17,54 @@ import { checkFeatureAccess } from './featureControl.controller.js';
 // Controller function to create a new note
 // Admin-only endpoint for uploading study material PDFs
 export const createNote = asyncHandler(async (req, res) => {
-  // Ensure note file was uploaded via multer
-  if (!req.file) return res.status(400).json({ message: 'Note file is required' });
+  // REMOVED: File requirement check - file is now optional
+  // if (!req.file) return res.status(400).json({ message: 'Note file is required' });
 
   // Destructure note metadata from request body
   const { title, description, subject_id, class_id, chapter_id } = req.body;
 
-  // Construct file path to uploaded note
-  const filePath = `/uploads/notes/${req.file.filename}`;
+  // Validate required fields
+  if (!title) {
+    return res.status(400).json({ message: 'Title is required' });
+  }
 
-  // Create new note document in database
-  const note = await Note.create({
+  // Prepare note data
+  const noteData = {
     title,                           // Note title
     description,                     // Note description
     subject_id: subject_id || null,  // Optional subject reference
     class_id: class_id || null,      // Optional class reference
     chapter_id: chapter_id || null,  // Optional chapter reference
-    file_path: filePath,             // Path to uploaded PDF file
-    file_name: req.file.originalname,  // Original filename for display
     uploaded_by: req.user.id,        // Current admin user ID
-    approved: true                   // Auto-approve notes (no moderation needed)
-  });
+    approved: true,                  // Auto-approve notes (no moderation needed)
+    // Add field to identify descriptive notes
+    is_descriptive_only: !req.file   // true if no file uploaded
+  };
+
+  // Add file data only if file exists
+  if (req.file) {
+    // Construct file path to uploaded note
+    const filePath = `/uploads/notes/${req.file.filename}`;
+    noteData.file_path = filePath;             // Path to uploaded PDF/file
+    noteData.file_name = req.file.originalname;  // Original filename for display
+    
+    // Determine file type from extension
+    const fileName = req.file.originalname.toLowerCase();
+    if (fileName.endsWith('.pdf')) {
+      noteData.file_type = 'pdf';
+    } else if (fileName.endsWith('.doc')) {
+      noteData.file_type = 'doc';
+    } else if (fileName.endsWith('.docx')) {
+      noteData.file_type = 'docx';
+    } else if (fileName.endsWith('.txt')) {
+      noteData.file_type = 'txt';
+    } else if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+      noteData.file_type = 'ppt';
+    }
+  }
+
+  // Create new note document in database
+  const note = await Note.create(noteData);
 
   // Send notification to all students about new note
   await Notification.create({
@@ -49,7 +76,34 @@ export const createNote = asyncHandler(async (req, res) => {
   });
 
   // Return created note with 201 Created status
-  res.status(201).json(note);
+  res.status(201).json({
+    message: noteData.is_descriptive_only 
+      ? 'Descriptive note created successfully' 
+      : 'Note uploaded successfully',
+    note
+  });
+});
+
+// Add this function for downloading notes
+export const downloadNote = asyncHandler(async (req, res) => {
+  const note = await Note.findById(req.params.id);
+  
+  if (!note) {
+    return res.status(404).json({ message: 'Note not found' });
+  }
+  
+  // Check if note has a file to download
+  if (!note.file_path || note.is_descriptive_only) {
+    return res.status(400).json({ message: 'This note has no file to download' });
+  }
+  
+  const filePath = path.join(process.cwd(), note.file_path);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'File not found on server' });
+  }
+  
+  res.download(filePath, note.file_name || 'note.pdf');
 });
 
 // Controller function to list notes with filtering and pagination
@@ -166,19 +220,21 @@ export const deleteNote = asyncHandler(async (req, res) => {
   // Delete note document from database
   await note.deleteOne();
 
-  // Attempt to delete associated note file
-  try {
-    // Remove leading slash from file path
-    const relPath = note.file_path.replace(/^\//, '');
+  // Attempt to delete associated note file (only if it exists and not descriptive)
+  if (note.file_path && !note.is_descriptive_only) {
+    try {
+      // Remove leading slash from file path
+      const relPath = note.file_path.replace(/^\//, '');
 
-    // Construct full file path
-    const fullPath = path.join(process.cwd(), relPath);
+      // Construct full file path
+      const fullPath = path.join(process.cwd(), relPath);
 
-    // Delete file if it exists on file system
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch {
-    // Silently catch file deletion errors
-    // File might already be deleted or path might be invalid
+      // Delete file if it exists on file system
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    } catch {
+      // Silently catch file deletion errors
+      // File might already be deleted or path might be invalid
+    }
   }
 
   // Return success message confirming deletion

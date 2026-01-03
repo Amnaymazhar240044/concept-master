@@ -8,7 +8,15 @@ import { authenticate, authorize, authenticateOptional } from '../middlewares/au
 import { upload } from '../middlewares/upload.js';
 
 // Import note controller functions for managing study material notes
-import { approveNote, createNote, deleteNote, getNote, getMyNotes, listNotes } from '../controllers/notes.controller.js';
+import { 
+    approveNote, 
+    createNote, 
+    deleteNote, 
+    getNote, 
+    getMyNotes, 
+    listNotes,
+    downloadNote  // ADD THIS IMPORT
+} from '../controllers/notes.controller.js';
 
 // Create a new Express router instance for note routes
 const router = Router();
@@ -29,6 +37,11 @@ router.get('/my-notes', authenticate, authorize(['admin']), getMyNotes);
 // Uses authenticateOptional for flexible access
 // Returns: single note object with file path and metadata
 router.get('/:id', authenticateOptional, getNote);
+
+// GET /notes/:id/download - Download note file
+// Requires: authentication
+// Returns: file download for notes with files
+router.get('/:id/download', authenticate, downloadNote);  // ADD THIS ROUTE
 
 // POST /notes - Admin-only endpoint to upload a new note
 // Requires: valid JWT token and admin role

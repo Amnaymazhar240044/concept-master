@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import { SERVER_ORIGIN } from '../../lib/config'
 import { motion } from 'framer-motion'
@@ -7,13 +7,14 @@ import {
   FileText, Download, Search, BookOpen, FolderOpen, 
   ArrowLeft, Calendar, User, Layers, Crown, Sparkles,
   Brain, Target, Award, School, Clock, GraduationCap,
-  ChevronRight, Star, Zap, FileDown
+  ChevronRight, Star, Zap, FileDown, Eye, Info, Book
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Notes() {
   const { user } = useAuth()
   const { classId } = useParams()
+  const navigate = useNavigate()
   const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
   const [selectedSubject, setSelectedSubject] = useState(null)
@@ -93,6 +94,19 @@ export default function Notes() {
   // Check Feature Access
   const notesFeature = featureSettings.find(f => f.featureName === 'notes')
   const isLocked = notesFeature?.isPremium && !user?.isPremium
+
+  // Handle view note details
+  const handleViewNote = (noteId) => {
+    navigate(`/student/notes/${classId}/view/${noteId}`)
+  }
+
+  // Get file icon based on note type
+  const getFileIcon = (note) => {
+    if (note.is_descriptive_only || !note.file_path) {
+      return <Book className="w-6 h-6 text-blue-500" />
+    }
+    return <FileText className="w-6 h-6 text-amber-500" />
+  }
 
   if (checkingFeature) {
     return (
@@ -418,55 +432,78 @@ export default function Notes() {
 
                   {/* Notes Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groupNotes.map((note) => (
-                      <motion.div
-                        key={note._id || note.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="h-full"
-                      >
-                        <div className="h-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden hover:shadow-xl transition-all duration-300">
-                          <div className="p-6 h-full flex flex-col">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center">
-                                <FileText className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="text-xs text-amber-600 dark:text-amber-400">
-                                <Calendar className="w-3 h-3 inline mr-1" />
-                                {note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Unknown'}
-                              </div>
-                            </div>
-
-                            <h3 className="text-lg font-bold mb-3 text-amber-900 dark:text-amber-50 line-clamp-2">
-                              {note.title}
-                            </h3>
-
-                            <p className="text-sm text-amber-700 dark:text-amber-300 mb-4 flex-1 line-clamp-3">
-                              {note.description || 'No description available'}
-                            </p>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-amber-200 dark:border-amber-800">
-                              {note.uploaded_by?.name && (
-                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                                  <User className="w-4 h-4" />
-                                  <span>{note.uploaded_by.name}</span>
+                    {groupNotes.map((note) => {
+                      const isDescriptive = note.is_descriptive_only || !note.file_path
+                      const hasFile = !isDescriptive && note.file_path
+                      
+                      return (
+                        <motion.div
+                          key={note._id || note.id}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="h-full"
+                        >
+                          <div className="h-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 overflow-hidden hover:shadow-xl transition-all duration-300">
+                            <div className="p-6 h-full flex flex-col">
+                              <div className="flex items-start justify-between mb-4">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                  isDescriptive 
+                                    ? 'bg-gradient-to-br from-blue-600 to-blue-500' 
+                                    : 'bg-gradient-to-br from-amber-600 to-orange-600'
+                                }`}>
+                                  {getFileIcon(note)}
                                 </div>
-                              )}
-                              
-                              <a
-                                href={`${SERVER_ORIGIN}${note.file_path}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                              >
-                                <Download className="w-4 h-4" />
-                                Download
-                              </a>
+                                <div className="text-xs text-amber-600 dark:text-amber-400">
+                                  <Calendar className="w-3 h-3 inline mr-1" />
+                                  {note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Unknown'}
+                                </div>
+                              </div>
+
+                              <h3 className="text-lg font-bold mb-3 text-amber-900 dark:text-amber-50 line-clamp-2">
+                                {note.title}
+                              </h3>
+
+                              <p className="text-sm text-amber-700 dark:text-amber-300 mb-4 flex-1 line-clamp-3">
+                                {note.description || 'No description available'}
+                              </p>
+
+                              <div className="flex items-center justify-between pt-4 border-t border-amber-200 dark:border-amber-800">
+                                {note.uploaded_by?.name && (
+                                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                                    <User className="w-4 h-4" />
+                                    <span>{note.uploaded_by.name}</span>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center gap-2">
+                                  {/* VIEW button - always shown */}
+                                  <button
+                                    onClick={() => handleViewNote(note._id || note.id)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    View
+                                  </button>
+                                  
+                                  {/* DOWNLOAD button - only shown if note has a file */}
+                                  {hasFile && (
+                                    <a
+                                      href={`${SERVER_ORIGIN}/notes/${note._id || note.id}/download`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                      Download
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      )
+                    })}
                   </div>
                 </motion.div>
               )

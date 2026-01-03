@@ -58,11 +58,9 @@ const noteSchema = new mongoose.Schema({
     // Path to uploaded note file on server
     file_path: {
         // Field must be a string data type
-        type: String,
-
-        // File path is required as notes are file-based resources
+        type: String
+        // REMOVED: required: true - file is now optional
         // Contains relative path to PDF or document file
-        required: true
     },
 
     // Original filename of the uploaded note
@@ -70,6 +68,25 @@ const noteSchema = new mongoose.Schema({
         // Field must be a string data type
         // Stores original filename for display purposes
         type: String
+    },
+
+    // Field to identify if note is descriptive only (no file)
+    is_descriptive_only: {
+        // Field must be a boolean value
+        type: Boolean,
+        
+        // Default to false (has file)
+        default: false
+    },
+
+    // Field to store file type
+    file_type: {
+        // Field must be a string data type
+        type: String,
+        
+        // Possible file types
+        enum: ['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', null],
+        default: null
     },
 
     // Reference to the User (admin) who uploaded this note

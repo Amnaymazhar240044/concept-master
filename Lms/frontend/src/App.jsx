@@ -84,8 +84,11 @@ export default function App() {
           } />
 
           {/* Student Routes */}
+          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          
           {/* Student Class Details */}
-          <Route path="student/class/:id" element={
+          <Route path="student/class/:classId" element={
             <ProtectedRoute roles={["student"]}>
               <ClassLayout />
             </ProtectedRoute>
@@ -96,33 +99,21 @@ export default function App() {
             <Route path="quizzes" element={<ClassQuizzes />} />
             <Route path="books" element={<ClassBooks />} />
           </Route>
-
-          {/* Note View Route */}
+          
           <Route path="student/notes/:classId/view/:id" element={
             <ProtectedRoute roles={["student"]}>
               <NoteView />
             </ProtectedRoute>
           } />
           
-          {/* Student Books Routes - ADDED THESE TWO LINES */}
-          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          
-          {/* Student Notes Routes */}
           <Route path="student/notes" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/notes/:classId" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
-          
-          {/* Student Lectures Routes */}
           <Route path="student/lectures" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
           <Route path="student/lectures/:classId" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
-          
-          {/* Student Quizzes Routes */}
           <Route path="student/quizzes" element={<ProtectedRoute roles={["student"]}><QuizList /></ProtectedRoute>} />
           <Route path="student/quizzes/:classId" element={<ProtectedRoute roles={["student"]}><QuizList /></ProtectedRoute>} />
           <Route path="student/quiz/:id" element={<ProtectedRoute roles={["student"]}><QuizDetail /></ProtectedRoute>} />
           <Route path="student/quiz/:id/attempt" element={<ProtectedRoute roles={["student"]}><AttemptQuiz /></ProtectedRoute>} />
-          
-          {/* Student Results & Performance */}
           <Route path="student/results" element={<ProtectedRoute roles={["student"]}><Results /></ProtectedRoute>} />
           <Route path="student/performance" element={<ProtectedRoute roles={["student"]}><Performance /></ProtectedRoute>} />
           <Route path="student/ai-tutor" element={<ProtectedRoute roles={["student"]}><ConceptMasterAI /></ProtectedRoute>} />
@@ -134,12 +125,10 @@ export default function App() {
           <Route path="admin/manage-notes" element={<ProtectedRoute roles={["admin"]}><ManageNotes /></ProtectedRoute>} />
           <Route path="admin/manage-classes" element={<ProtectedRoute roles={["admin"]}><ManageClasses /></ProtectedRoute>} />
           <Route path="admin/manage-books" element={<ProtectedRoute roles={["admin"]}><ManageBooks /></ProtectedRoute>} />
-          
-          {/* Feature Control Route */}
           <Route path="admin/feature-control" element={<ProtectedRoute roles={["admin"]}><FeatureControl /></ProtectedRoute>} />
           <Route path="admin/system-overview" element={<ProtectedRoute roles={["admin"]}><SystemOverview /></ProtectedRoute>} />
 
-          {/* Admin/Teacher Features */}
+          {/* Migrated Teacher Features to Admin */}
           <Route path="admin/upload-notes" element={<ProtectedRoute roles={["admin"]}><UploadNotes /></ProtectedRoute>} />
           <Route path="admin/upload-lectures" element={<ProtectedRoute roles={["admin"]}><UploadLectures /></ProtectedRoute>} />
           <Route path="admin/create-quiz" element={<ProtectedRoute roles={["admin"]}><CreateQuiz /></ProtectedRoute>} />
@@ -147,7 +136,7 @@ export default function App() {
           <Route path="admin/student-attempts" element={<ProtectedRoute roles={["admin"]}><StudentAttempts /></ProtectedRoute>} />
           <Route path="admin/analytics" element={<ProtectedRoute roles={["admin"]}><Analytics /></ProtectedRoute>} />
 
-          {/* Settings - Available to all authenticated users */}
+          {/* Settings */}
           <Route path="settings" element={<ProtectedRoute roles={["student", "admin"]}><Settings /></ProtectedRoute>} />
         </Route>
       </Routes>

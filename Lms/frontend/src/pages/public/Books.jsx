@@ -250,7 +250,7 @@ export default function Books() {
                           <div className="flex-shrink-0 w-20 h-24 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-800 dark:to-orange-800 rounded-lg overflow-hidden">
                             {item.coverImage && (
                               <img
-                                src={`http://localhost:5000${item.coverImage}`}
+                                src={`${import.meta.env.VITE_API_BASE_URL}${item.coverImage}`}
                                 alt={item.title}
                                 className="w-full h-full object-cover"
                               />
@@ -538,7 +538,7 @@ export default function Books() {
                           <div className="relative aspect-[4/3] bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900 dark:to-amber-800 overflow-hidden flex items-center justify-center">
                             {book.coverImage ? (
                               <img
-                                src={`http://localhost:5000${book.coverImage}`}
+                                src={`${import.meta.env.VITE_API_BASE_URL}${book.coverImage}`}
                                 alt={book.title}
                                 loading="lazy"
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"

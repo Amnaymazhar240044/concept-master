@@ -229,7 +229,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="group"
               >
-                <Link to={`/class/${cls._id}`} className="block h-full">
+                <Link to={`/student/class/${cls._id}`} className="block h-full">
                   <div className="h-full p-6 md:p-8 rounded-2xl bg-white dark:bg-gray-800 border border-amber-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col">
                     <div className="flex items-start justify-between mb-6">
                       <div className="w-14 h-14 md:w-16 h-16 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">

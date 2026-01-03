@@ -11,9 +11,6 @@ import {
     ChevronLeft,
     GraduationCap,
     ArrowLeft,
-    Calendar,
-    MessageSquare,
-    Users,
     Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,8 +45,7 @@ export default function ClassLayout() {
         { to: `/class/${classId}/lectures`, label: 'Lectures', icon: PlayCircle },
         { to: `/class/${classId}/quizzes`, label: 'Quizzes', icon: CheckCircle },
         { to: `/class/${classId}/books`, label: 'Books', icon: BookOpen },
-        { to: `/class/${classId}/assignments`, label: 'Assignments', icon: Calendar },
-        { to: `/class/${classId}/discussions`, label: 'Discussions', icon: MessageSquare },
+        // Assignments and Discussions removed
     ];
 
     return (
@@ -147,36 +143,6 @@ export default function ClassLayout() {
                         <div className="flex items-center justify-between text-xs">
                             <span className="text-amber-600 dark:text-amber-400">12/20 completed</span>
                             <span className="text-amber-700 dark:text-amber-300 font-medium">Keep going!</span>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="p-4 border-t border-amber-200 dark:border-amber-800">
-                        <div className="space-y-2">
-                            <Link
-                                to={`/class/${classId}/students`}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors text-sm text-amber-700 dark:text-amber-300"
-                            >
-                                <Users className="w-4 h-4" />
-                                <span>Classmates</span>
-                            </Link>
-                            <Link
-                                to={`/class/${classId}/settings`}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors text-sm text-amber-700 dark:text-amber-300"
-                            >
-                                <Settings className="w-4 h-4" />
-                                <span>Class Settings</span>
-                            </Link>
-                        </div>
-                        
-                        <div className="mt-4 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl p-4 text-white text-center shadow-lg">
-                            <p className="text-sm font-medium mb-2">Need Help?</p>
-                            <Link 
-                                to="/support" 
-                                className="block text-xs bg-white/20 hover:bg-white/30 transition-colors px-3 py-2 rounded-lg w-full font-medium"
-                            >
-                                Contact Support
-                            </Link>
                         </div>
                     </div>
                 </div>

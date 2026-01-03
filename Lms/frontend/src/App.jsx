@@ -84,9 +84,18 @@ export default function App() {
           } />
 
           {/* Student */}
-          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          
+         {/* Student Class Details */}
+<Route path="student/class/:id" element={
+  <ProtectedRoute roles={["student"]}>
+    <ClassLayout />
+  </ProtectedRoute>
+}>
+  <Route index element={<ClassOverview />} />
+  <Route path="notes" element={<ClassNotes />} />
+  <Route path="lectures" element={<ClassLectures />} />
+  <Route path="quizzes" element={<ClassQuizzes />} />
+  <Route path="books" element={<ClassBooks />} />
+</Route>
           {/* ADD THE NOTEVIEW ROUTE HERE */}
           <Route path="student/notes/:classId/view/:id" element={
             <ProtectedRoute roles={["student"]}>

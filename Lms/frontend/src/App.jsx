@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StudentDashboard from './pages/student/StudentDashboard.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import Notes from './pages/student/Notes.jsx'
-import NoteView from './pages/student/NoteView.jsx'
 import Lectures from './pages/student/Lectures.jsx'
 import QuizList from './pages/student/QuizList.jsx'
 import QuizDetail from './pages/student/QuizDetail.jsx'
@@ -60,15 +59,10 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<HomeOrDashboard />} />
           
-          {/* ⬇️⬇️⬇️ STUDENT BOOKS ROUTES MUST COME FIRST ⬇️⬇️⬇️ */}
-          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
-          
-          {/* ⬇️⬇️⬇️ PUBLIC ROUTES COME AFTER ⬇️⬇️⬇️ */}
-          <Route path="books" element={<Books />} />
+          {/* PUBLIC ROUTES */}
+          <Route path="books" element={<Books />} exact /> {/* 🔥 ADDED "exact" HERE */}
           <Route path="books/detail/:bookId" element={<BookDetail />} />
           <Route path="books/:grade" element={<Books />} />
-          
           <Route path="classes" element={<PublicClasses />} />
           <Route path="notes" element={<PublicNotes />} />
           <Route path="pricing" element={<Pricing />} />
@@ -90,6 +84,10 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+          {/* STUDENT ROUTES */}
+          <Route path="student/books" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          <Route path="student/books/:grade" element={<ProtectedRoute roles={["student"]}><Books /></ProtectedRoute>} />
+          
           {/* Student Class Details */}
           <Route path="student/class/:classId" element={
             <ProtectedRoute roles={["student"]}>
@@ -103,12 +101,6 @@ export default function App() {
             <Route path="books" element={<ClassBooks />} />
           </Route>
           
-          <Route path="student/notes/:classId/view/:id" element={
-            <ProtectedRoute roles={["student"]}>
-              <NoteView />
-            </ProtectedRoute>
-          } />
-          
           <Route path="student/notes" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/notes/:classId" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/lectures" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
@@ -121,7 +113,7 @@ export default function App() {
           <Route path="student/performance" element={<ProtectedRoute roles={["student"]}><Performance /></ProtectedRoute>} />
           <Route path="student/ai-tutor" element={<ProtectedRoute roles={["student"]}><ConceptMasterAI /></ProtectedRoute>} />
 
-          {/* Admin Routes */}
+          {/* ADMIN ROUTES */}
           <Route path="admin/manage-users" element={<ProtectedRoute roles={["admin"]}><ManageUsers /></ProtectedRoute>} />
           <Route path="admin/manage-subjects" element={<ProtectedRoute roles={["admin"]}><ManageSubjects /></ProtectedRoute>} />
           <Route path="admin/manage-chapters" element={<ProtectedRoute roles={["admin"]}><ManageChapters /></ProtectedRoute>} />

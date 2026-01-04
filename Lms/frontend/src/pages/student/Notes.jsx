@@ -446,17 +446,7 @@ export default function Notes() {
                                   View
                                 </Link>
                                 
-                                {note.file_path && (
-                                  <a
-                                    href={`${SERVER_ORIGIN}${note.file_path}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                    Download
-                                  </a>
-                                )}
+                                
                               </div>
                             </div>
                           </div>

@@ -110,14 +110,20 @@ export default function NoteView() {
           {note.description && (
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-3">Description</h3>
-              <p className="text-gray-700">{note.description}</p>
+              <div className="description-content whitespace-pre-wrap text-gray-700">
+                {note.description.split('\n\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
             </div>
           )}
 
           {note.content && (
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-3">Content</h3>
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="bg-gray-50 p-6 rounded-lg description-content whitespace-pre-wrap">
                 {note.content.split('\n').map((paragraph, index) => (
                   <p key={index} className="mb-4">{paragraph}</p>
                 ))}

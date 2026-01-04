@@ -64,6 +64,21 @@ export default function UploadNotes() {
     loadChapters()
   }, [classId, subjectId])
 
+  const formatDescription = (text) => {
+    if (!text) return '';
+    
+    // Remove excessive newlines (more than 2)
+    text = text.replace(/\n{3,}/g, '\n\n');
+    
+    // Trim whitespace from each line
+    text = text.split('\n').map(line => line.trim()).join('\n');
+    
+    // Ensure proper paragraph spacing - replace single newlines with space, keep double newlines
+    text = text.replace(/([^\n])\n([^\n])/g, '$1 $2');
+    
+    return text;
+  };
+
   const submit = async (e) => {
     e.preventDefault()
     setMsg('')
@@ -72,8 +87,12 @@ export default function UploadNotes() {
 
     try {
       const fd = new FormData()
-      fd.append('title', title)
-      fd.append('description', description)
+      fd.append('title', title.trim())
+      
+      // Format description before sending
+      const formattedDescription = formatDescription(description);
+      fd.append('description', formattedDescription)
+      
       if (classId) fd.append('class_id', classId)
       if (subjectId) fd.append('subject_id', subjectId)
       if (chapterId) fd.append('chapter_id', chapterId)
@@ -156,6 +175,10 @@ export default function UploadNotes() {
 
   const removeFile = () => {
     setFile(null)
+  }
+
+  const handleDescriptionChange = (e) => {
+    setDescription(e.target.value);
   }
 
   // Validation: Title, Class, and Subject are required, File is optional
@@ -243,15 +266,36 @@ export default function UploadNotes() {
               <div>
                 <Textarea
                   label="Description"
-                  placeholder="Provide a brief description of the notes content..."
+                  placeholder={`Write your description here. Use paragraphs for better readability.
+
+For example:
+This note covers the fundamentals of algebra including variables, equations, and expressions.
+
+Key topics include:
+- Linear equations
+- Quadratic functions
+- Polynomial expressions
+
+Make sure to practice all examples for better understanding.`}
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  rows={3}
-                  className="border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500"
+                  onChange={handleDescriptionChange}
+                  rows={8}
+                  className="border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500 whitespace-pre-wrap"
                 />
-                <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
-                  Explain what concepts are covered and how it helps students
-                </p>
+                <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-lg border border-blue-200 dark:border-blue-800 mt-2">
+                  <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Info className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">Writing Tips:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>Write in complete paragraphs for better readability</li>
+                      <li>Use double line breaks for paragraph spacing</li>
+                      <li>Bullet points are preserved with dashes or asterisks</li>
+                      <li>Formatting will be cleaned for consistent display</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
 

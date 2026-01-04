@@ -7,3 +7,24 @@ body,
 #root {
   height: 100%;
 }
+
+/* Custom styles for description formatting */
+.description-content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.description-content p {
+  margin-bottom: 1em;
+  line-height: 1.6;
+}
+
+.description-content ul,
+.description-content ol {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.description-content li {
+  margin-bottom: 0.5em;
+}

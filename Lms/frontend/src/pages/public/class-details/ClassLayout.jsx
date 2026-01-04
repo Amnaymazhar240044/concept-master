@@ -47,7 +47,7 @@ export default function ClassLayout() {
         { to: `/class/${classId}/notes`, label: 'Notes', icon: FileText },
         { to: `/class/${classId}/lectures`, label: 'Lectures', icon: PlayCircle },
         { to: `/class/${classId}/quizzes`, label: 'Quizzes', icon: CheckCircle },
-        { to: `/class/${classId}/books`, label: 'Books', icon: BookOpen },
+       
        
     ];
 

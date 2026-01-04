@@ -8,10 +8,12 @@ import {
   FileText, Download, Search, Filter, BookOpen, FolderOpen, 
   ArrowLeft, Calendar, User, Layers, Trash2, Plus, AlertCircle, 
   CheckCircle, GraduationCap, Sparkles, Target, Brain, Zap, 
-  ArrowRight, FileUp, FolderPlus, Bookmark 
+  ArrowRight, FileUp, FolderPlus, Bookmark, Video, PlayCircle,
+  Link2, Lock, Crown, ExternalLink, Eye, Loader2, X
 } from 'lucide-react'
 
 export default function ManageNotes() {
+    const [activeTab, setActiveTab] = useState('notes') // 'notes' or 'lectures'
     const [classId, setClassId] = useState(null)
     const [classes, setClasses] = useState([])
     const [subjects, setSubjects] = useState([])
@@ -19,10 +21,12 @@ export default function ManageNotes() {
 
     const [chapters, setChapters] = useState([])
     const [notes, setNotes] = useState([])
+    const [lectures, setLectures] = useState([])
 
     const [loading, setLoading] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [msg, setMsg] = useState('')
+    const [deletingLectureId, setDeletingLectureId] = useState(null)
 
     // Load Classes on mount
     useEffect(() => {
@@ -51,7 +55,7 @@ export default function ManageNotes() {
         loadSubjects()
     }, [classId])
 
-    // Load Chapters and Notes when Subject is selected
+    // Load Chapters and Notes/Lectures when Subject is selected
     useEffect(() => {
         const loadContent = async () => {
             if (!classId || !selectedSubject) return
@@ -71,6 +75,27 @@ export default function ManageNotes() {
         loadContent()
     }, [classId, selectedSubject])
 
+    // Load Lectures when tab is lectures
+    useEffect(() => {
+        if (activeTab === 'lectures' && classId) {
+            loadLectures()
+        }
+    }, [activeTab, classId, selectedSubject])
+
+    const loadLectures = async () => {
+        setLoading(true)
+        try {
+            const response = await api.get('/lectures', { 
+                params: { class_id: classId, subject_id: selectedSubject?._id || selectedSubject?.id } 
+            })
+            setLectures(response.data.data || [])
+        } catch (error) {
+            console.error('Failed to load lectures:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const deleteNote = async (id) => {
         if (!confirm('Are you sure you want to delete this note?')) return
         try {
@@ -84,27 +109,37 @@ export default function ManageNotes() {
         }
     }
 
+    const deleteLecture = async (lectureId) => {
+        if (!confirm('Are you sure you want to delete this lecture?')) return
+        setDeletingLectureId(lectureId)
+        try {
+            await api.delete(`/lectures/${lectureId}`)
+            setLectures(lectures.filter(l => l._id !== lectureId))
+            setMsg('Lecture deleted successfully')
+            setTimeout(() => setMsg(''), 3000)
+        } catch (error) {
+            console.error('Failed to delete lecture:', error)
+            alert('Failed to delete lecture')
+        } finally {
+            setDeletingLectureId(null)
+        }
+    }
+
     const currentClass = classes.find(c => String(c._id || c.id) === String(classId))
 
     // Group notes by chapter
     const groupedNotes = () => {
         const grouped = {}
-
-        // Initialize groups for all chapters
         chapters.forEach(ch => {
             grouped[ch._id || ch.id] = {
                 chapter: ch,
                 notes: []
             }
         })
-
-        // Add "Uncategorized" group
         grouped['uncategorized'] = {
             chapter: { title: 'Uncategorized / General', _id: 'uncategorized' },
             notes: []
         }
-
-        // Distribute notes
         notes.forEach(note => {
             const noteChapterId = note.chapter_id?._id || note.chapter_id
             if (noteChapterId && grouped[noteChapterId]) {
@@ -113,8 +148,34 @@ export default function ManageNotes() {
                 grouped['uncategorized'].notes.push(note)
             }
         })
+        return Object.values(grouped).sort((a, b) => {
+            if (a.chapter._id === 'uncategorized') return 1
+            if (b.chapter._id === 'uncategorized') return -1
+            return (a.chapter.order || 0) - (b.chapter.order || 0)
+        })
+    }
 
-        // Filter out empty groups if search term is active, or just return all
+    // Group lectures by chapter
+    const groupedLectures = () => {
+        const grouped = {}
+        chapters.forEach(ch => {
+            grouped[ch._id || ch.id] = {
+                chapter: ch,
+                lectures: []
+            }
+        })
+        grouped['uncategorized'] = {
+            chapter: { title: 'Uncategorized / General', _id: 'uncategorized' },
+            lectures: []
+        }
+        lectures.forEach(lecture => {
+            const lectureChapterId = lecture.chapter_id?._id || lecture.chapter_id
+            if (lectureChapterId && grouped[lectureChapterId]) {
+                grouped[lectureChapterId].lectures.push(lecture)
+            } else {
+                grouped['uncategorized'].lectures.push(lecture)
+            }
+        })
         return Object.values(grouped).sort((a, b) => {
             if (a.chapter._id === 'uncategorized') return 1
             if (b.chapter._id === 'uncategorized') return -1
@@ -134,13 +195,13 @@ export default function ManageNotes() {
                 >
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-md">
-                            <FileText className="w-6 h-6 text-white" />
+                            <BookOpen className="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
-                                Manage Notes
+                                Manage Study Materials
                             </h1>
-                            <p className="text-amber-600/70 dark:text-amber-400/70">Select a class to view and manage notes</p>
+                            <p className="text-amber-600/70 dark:text-amber-400/70">Select a class to manage notes and video lectures</p>
                         </div>
                     </div>
                 </motion.div>
@@ -170,7 +231,7 @@ export default function ManageNotes() {
                                                 <BookOpen className="w-6 h-6" />
                                             </div>
                                             <h3 className="text-xl font-bold mb-2">{c.title}</h3>
-                                            <p className="text-sm opacity-90 mb-3">Manage notes and resources</p>
+                                            <p className="text-sm opacity-90 mb-3">Manage notes and video lectures</p>
                                             <div className="flex items-center text-xs opacity-80">
                                                 <span>Select to continue</span>
                                                 <ArrowRight className="w-3 h-3 ml-1" />
@@ -181,19 +242,6 @@ export default function ManageNotes() {
                             </motion.div>
                         ))}
                     </div>
-                )}
-
-                {/* Summary Footer */}
-                {classes.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-center gap-4 text-sm text-amber-600/70 dark:text-amber-400/70"
-                    >
-                        <FolderOpen className="w-4 h-4" />
-                        <span>{classes.length} classes available for notes management</span>
-                        <Sparkles className="w-4 h-4" />
-                    </motion.div>
                 )}
             </div>
         )
@@ -224,7 +272,7 @@ export default function ManageNotes() {
                                 <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
                                     Subjects – {currentClass?.title}
                                 </h1>
-                                <p className="text-amber-600/70 dark:text-amber-400/70">Select a subject to manage notes</p>
+                                <p className="text-amber-600/70 dark:text-amber-400/70">Select a subject to manage study materials</p>
                             </div>
                         </div>
                     </div>
@@ -255,7 +303,7 @@ export default function ManageNotes() {
                                                 <BookOpen className="w-6 h-6" />
                                             </div>
                                             <h3 className="text-xl font-bold mb-2">{s.name}</h3>
-                                            <p className="text-sm opacity-90 mb-3">View and manage notes</p>
+                                            <p className="text-sm opacity-90 mb-3">View and manage materials</p>
                                             <div className="flex items-center text-xs opacity-80">
                                                 <span>Click to select</span>
                                                 <ArrowRight className="w-3 h-3 ml-1" />
@@ -271,14 +319,21 @@ export default function ManageNotes() {
         )
     }
 
-    // 3. Notes & Chapters View
-    const groups = groupedNotes()
-    const filteredGroups = groups.filter(group => 
-        group.notes.some(note =>
-            note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            note.description?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    )
+    // 3. Content Management View
+    const groups = activeTab === 'notes' ? groupedNotes() : groupedLectures()
+    const filteredGroups = groups.filter(group => {
+        if (activeTab === 'notes') {
+            return group.notes.some(note =>
+                note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                note.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        } else {
+            return group.lectures.some(lecture =>
+                lecture.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                lecture.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        }
+    })
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
@@ -323,17 +378,49 @@ export default function ManageNotes() {
 
                         <div>
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-md">
-                                    <FileText className="w-6 h-6 text-white" />
+                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-md`}>
+                                    {activeTab === 'notes' ? (
+                                        <FileText className="w-6 h-6 text-white" />
+                                    ) : (
+                                        <Video className="w-6 h-6 text-white" />
+                                    )}
                                 </div>
                                 <div>
                                     <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
-                                        {selectedSubject.name} Notes
+                                        {selectedSubject.name} {activeTab === 'notes' ? 'Notes' : 'Video Lectures'}
                                     </h1>
                                     <p className="text-amber-600/70 dark:text-amber-400/70">
                                         {currentClass?.title} • Manage study materials and resources
                                     </p>
                                 </div>
+                            </div>
+
+                            {/* Tabs */}
+                            <div className="flex gap-2 mt-4">
+                                <button
+                                    onClick={() => setActiveTab('notes')}
+                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'notes'
+                                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
+                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4" />
+                                        Notes ({notes.length})
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('lectures')}
+                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'lectures'
+                                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
+                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Video className="w-4 h-4" />
+                                        Video Lectures ({lectures.length})
+                                    </div>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -343,7 +430,7 @@ export default function ManageNotes() {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-amber-400" />
                         <input
                             type="text"
-                            placeholder="Search notes..."
+                            placeholder={`Search ${activeTab === 'notes' ? 'notes' : 'lectures'}...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:outline-none transition-colors text-amber-900 dark:text-amber-100 placeholder-amber-500/60 dark:placeholder-amber-400/40 w-full sm:w-64"
@@ -368,91 +455,212 @@ export default function ManageNotes() {
             ) : (
                 <div className="space-y-10">
                     {filteredGroups.map((group) => {
-                        // Filter notes within group based on search
-                        const groupNotes = group.notes.filter(note =>
-                            note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            note.description?.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
+                        if (activeTab === 'notes') {
+                            const groupNotes = group.notes.filter(note =>
+                                note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                note.description?.toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            if (groupNotes.length === 0) return null
 
-                        if (groupNotes.length === 0) return null
-
-                        return (
-                            <motion.div
-                                key={group.chapter._id || group.chapter.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="space-y-4"
-                            >
-                                {/* Chapter Header */}
-                                <div className="flex items-center gap-3 pb-4 border-b border-amber-200 dark:border-amber-800">
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center shadow-sm">
-                                        <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            return (
+                                <motion.div
+                                    key={group.chapter._id || group.chapter.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="space-y-4"
+                                >
+                                    {/* Chapter Header */}
+                                    <div className="flex items-center gap-3 pb-4 border-b border-amber-200 dark:border-amber-800">
+                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center shadow-sm">
+                                            <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100">
+                                            {group.chapter.title}
+                                        </h2>
+                                        <div className="ml-auto text-sm text-amber-600/70 dark:text-amber-400/70">
+                                            {groupNotes.length} note{groupNotes.length !== 1 ? 's' : ''}
+                                        </div>
                                     </div>
-                                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100">
-                                        {group.chapter.title}
-                                    </h2>
-                                    <div className="ml-auto text-sm text-amber-600/70 dark:text-amber-400/70">
-                                        {groupNotes.length} note{groupNotes.length !== 1 ? 's' : ''}
+
+                                    {/* Notes Grid */}
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {groupNotes.map((note) => (
+                                            <motion.div
+                                                key={note._id || note.id}
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                className="h-full"
+                                            >
+                                                <Card className="h-full hover:shadow-xl transition-all duration-300 group relative border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800/50 dark:to-amber-950/10">
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-sm">
+                                                            <FileText className="w-6 h-6" />
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                variant="danger"
+                                                                size="sm"
+                                                                onClick={() => deleteNote(note._id || note.id)}
+                                                                className="flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white border-0 shadow-sm hover:shadow-md"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    <h3 className="text-lg font-bold mb-2 text-amber-900 dark:text-amber-50 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors line-clamp-2">
+                                                        {note.title}
+                                                    </h3>
+
+                                                    <p className="text-sm text-amber-600/70 dark:text-amber-400/70 mb-4 line-clamp-3">
+                                                        {note.description || 'No description available'}
+                                                    </p>
+
+                                                    <div className="flex items-center justify-between mt-auto">
+                                                        <div className="flex items-center gap-1 text-xs text-amber-500/60 dark:text-amber-400/50">
+                                                            <Calendar className="w-3 h-3" />
+                                                            <span>{note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                                                        </div>
+
+                                                        {note.file_path && (
+                                                            <a
+                                                                href={`${SERVER_ORIGIN}${note.file_path}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 shadow-sm"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                                Download
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </Card>
+                                            </motion.div>
+                                        ))}
                                     </div>
-                                </div>
+                                </motion.div>
+                            )
+                        } else {
+                            const groupLectures = group.lectures.filter(lecture =>
+                                lecture.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                lecture.description?.toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            if (groupLectures.length === 0) return null
 
-                                {/* Notes Grid */}
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {groupNotes.map((note) => (
-                                        <motion.div
-                                            key={note._id || note.id}
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="h-full"
-                                        >
-                                            <Card className="h-full hover:shadow-xl transition-all duration-300 group relative border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800/50 dark:to-amber-950/10">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-sm">
-                                                        <FileText className="w-6 h-6" />
+                            return (
+                                <motion.div
+                                    key={group.chapter._id || group.chapter.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="space-y-4"
+                                >
+                                    {/* Chapter Header */}
+                                    <div className="flex items-center gap-3 pb-4 border-b border-amber-200 dark:border-amber-800">
+                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center shadow-sm">
+                                            <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100">
+                                            {group.chapter.title}
+                                        </h2>
+                                        <div className="ml-auto text-sm text-amber-600/70 dark:text-amber-400/70">
+                                            {groupLectures.length} lecture{groupLectures.length !== 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+
+                                    {/* Lectures Grid */}
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {groupLectures.map((lecture) => (
+                                            <motion.div
+                                                key={lecture._id || lecture.id}
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                className="h-full"
+                                            >
+                                                <Card className="h-full hover:shadow-xl transition-all duration-300 group relative border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800/50 dark:to-amber-950/10">
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-sm">
+                                                            <Video className="w-6 h-6" />
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {lecture.isPremium && (
+                                                                <span className="px-2 py-1 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center gap-1">
+                                                                    <Crown className="w-3 h-3" />
+                                                                    Premium
+                                                                </span>
+                                                            )}
+                                                            <Button
+                                                                variant="danger"
+                                                                size="sm"
+                                                                onClick={() => deleteLecture(lecture._id)}
+                                                                disabled={deletingLectureId === lecture._id}
+                                                                className="flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white border-0 shadow-sm hover:shadow-md"
+                                                            >
+                                                                {deletingLectureId === lecture._id ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                )}
+                                                            </Button>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            variant="danger"
-                                                            size="sm"
-                                                            onClick={() => deleteNote(note._id || note.id)}
-                                                            className="flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white border-0 shadow-sm hover:shadow-md"
-                                                        >
-                                                            <Trash2 className="w-3 h-3" />
-                                                        </Button>
+                                                    <h3 className="text-lg font-bold mb-2 text-amber-900 dark:text-amber-50 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors line-clamp-2">
+                                                        {lecture.title}
+                                                    </h3>
+
+                                                    <p className="text-sm text-amber-600/70 dark:text-amber-400/70 mb-4 line-clamp-3">
+                                                        {lecture.description || 'No description available'}
+                                                    </p>
+
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2 text-xs text-amber-500/60 dark:text-amber-400/50">
+                                                                {lecture.type === 'file' ? (
+                                                                    <Video className="w-3 h-3" />
+                                                                ) : (
+                                                                    <Link2 className="w-3 h-3" />
+                                                                )}
+                                                                <span>{lecture.type === 'file' ? 'Video File' : 'External Link'}</span>
+                                                            </div>
+                                                            <div className="text-xs text-amber-500/60 dark:text-amber-400/50">
+                                                                <Calendar className="w-3 h-3 inline mr-1" />
+                                                                {lecture.created_at ? new Date(lecture.created_at).toLocaleDateString() : 'Unknown'}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {lecture.type === 'link' ? (
+                                                                <a
+                                                                    href={lecture.link}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 flex-1 justify-center shadow-sm"
+                                                                >
+                                                                    <ExternalLink className="w-4 h-4" />
+                                                                    View Link
+                                                                </a>
+                                                            ) : lecture.type === 'file' && lecture.file_path ? (
+                                                                <a
+                                                                    href={`${SERVER_ORIGIN}${lecture.file_path}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 flex-1 justify-center shadow-sm"
+                                                                >
+                                                                    <PlayCircle className="w-4 h-4" />
+                                                                    Watch Video
+                                                                </a>
+                                                            ) : null}
+                                                        </div>
                                                     </div>
-                                                </div>
-
-                                                <h3 className="text-lg font-bold mb-2 text-amber-900 dark:text-amber-50 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors line-clamp-2">
-                                                    {note.title}
-                                                </h3>
-
-                                                <p className="text-sm text-amber-600/70 dark:text-amber-400/70 mb-4 line-clamp-3">
-                                                    {note.description || 'No description available'}
-                                                </p>
-
-                                                <div className="flex items-center justify-between mt-auto">
-                                                    <div className="flex items-center gap-1 text-xs text-amber-500/60 dark:text-amber-400/50">
-                                                        <Calendar className="w-3 h-3" />
-                                                        <span>{note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                                                    </div>
-
-                                                    <a
-                                                        href={`${SERVER_ORIGIN}${note.file_path}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 shadow-sm"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                        Download
-                                                    </a>
-                                                </div>
-                                            </Card>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )
+                                                </Card>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )
+                        }
                     })}
 
                     {filteredGroups.length === 0 && (
@@ -462,18 +670,18 @@ export default function ManageNotes() {
                             className="text-center py-12 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-2xl bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800/50 dark:to-amber-950/10"
                         >
                             <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FileText className="w-8 h-8 text-amber-400" />
+                                {activeTab === 'notes' ? (
+                                    <FileText className="w-8 h-8 text-amber-400" />
+                                ) : (
+                                    <Video className="w-8 h-8 text-amber-400" />
+                                )}
                             </div>
                             <h3 className="text-lg font-medium text-amber-900 dark:text-amber-100 mb-2">
-                                {searchTerm ? 'No notes found' : 'No notes available'}
+                                {searchTerm ? `No ${activeTab} found` : `No ${activeTab} available`}
                             </h3>
                             <p className="text-amber-600/70 dark:text-amber-400/70">
-                                {searchTerm ? 'Try adjusting your search terms' : 'Notes will appear here once uploaded'}
+                                {searchTerm ? 'Try adjusting your search terms' : `${activeTab === 'notes' ? 'Notes' : 'Video lectures'} will appear here once uploaded`}
                             </p>
-                            <div className="flex items-center justify-center gap-2 mt-4 text-amber-500">
-                                <FileUp className="w-4 h-4" />
-                                <span>Upload notes to get started</span>
-                            </div>
                         </motion.div>
                     )}
 
@@ -487,11 +695,23 @@ export default function ManageNotes() {
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm text-amber-600/70 dark:text-amber-400/70">
                                 <div className="flex items-center gap-2">
                                     <Brain className="w-4 h-4" />
-                                    <span>Notes are organized by chapters for systematic learning</span>
+                                    <span>
+                                        {activeTab === 'notes' 
+                                            ? 'Notes are organized by chapters for systematic learning'
+                                            : 'Video lectures enhance learning through visual content'
+                                        }
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4" />
-                                    <span>Total: {notes.length} notes across {filteredGroups.length} section{filteredGroups.length !== 1 ? 's' : ''}</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4" />
+                                        <span>
+                                            {activeTab === 'notes'
+                                                ? `Total: ${notes.length} notes across ${filteredGroups.length} section${filteredGroups.length !== 1 ? 's' : ''}`
+                                                : `Total: ${lectures.length} lectures across ${filteredGroups.length} section${filteredGroups.length !== 1 ? 's' : ''}`
+                                            }
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>

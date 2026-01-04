@@ -5,12 +5,11 @@ import api from '../../../lib/api'
 import { SERVER_ORIGIN } from '../../../lib/config'
 import { motion } from 'framer-motion'
 import { 
-  FileText, Download, Search, BookOpen, FolderOpen, 
-  ArrowLeft, Calendar, User, Layers, Crown, Sparkles,
-  Brain, Target, Award, School, Clock, GraduationCap,
-  ChevronRight, Star, Zap, FileDown, Eye, Info, Book,
-  Grid, List, Filter, TrendingUp, Users as UsersIcon,
-  BarChart3, Shield, CheckCircle, Home, ExternalLink
+  FileText, Download, Search, BookOpen, 
+  ArrowLeft, Calendar, User, Layers, 
+  ChevronRight, Star, Eye, Book,
+  Grid, List, TrendingUp,
+  BarChart3, Shield, CheckCircle, ExternalLink
 } from 'lucide-react'
 
 export default function ClassNotes() {
@@ -18,7 +17,6 @@ export default function ClassNotes() {
   const { classId } = useParams()
   const navigate = useNavigate()
   
-  const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
   const [selectedSubject, setSelectedSubject] = useState(null)
 
@@ -27,8 +25,6 @@ export default function ClassNotes() {
 
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [featureSettings, setFeatureSettings] = useState([])
-  const [checkingFeature, setCheckingFeature] = useState(true)
   const [viewMode, setViewMode] = useState('grid')
 
   // Get file icon based on note type
@@ -146,23 +142,23 @@ export default function ClassNotes() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+          <div className="bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">{subjects.length}</div>
             <div className="text-sm text-amber-600 dark:text-amber-400">Subjects</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+          <div className="bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {subjects.reduce((acc, sub) => acc + (sub.chapterCount || 0), 0)}
             </div>
             <div className="text-sm text-amber-600 dark:text-amber-400">Chapters</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+          <div className="bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {subjects.reduce((acc, sub) => acc + (sub.noteCount || 0), 0)}
             </div>
             <div className="text-sm text-amber-600 dark:text-amber-400">Total Notes</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+          <div className="bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
             <div className="text-sm text-amber-600 dark:text-amber-400">Access</div>
           </div>
@@ -488,4 +484,4 @@ export default function ClassNotes() {
       )}
     </div>
   )
-} 
+}

@@ -7,7 +7,8 @@ import {
   Lock, Crown, Video, Link as LinkIcon, BookOpen, 
   GraduationCap, PlayCircle, Users, Sparkles, 
   Brain, Award, Target, ArrowLeft, Layers, 
-  School, FolderOpen, Clock, UsersIcon
+  School, FolderOpen, Clock, UsersIcon,
+  Download
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { motion } from 'framer-motion'
@@ -18,6 +19,7 @@ export default function Lectures() {
   const [items, setItems] = useState([])
   const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
+  const [playingVideo, setPlayingVideo] = useState(null)
 
   useEffect(() => {
     const loadClasses = async () => {
@@ -49,6 +51,24 @@ export default function Lectures() {
     }
     loadLectures()
   }, [classId])
+
+  const handleVideoPlay = (videoId) => {
+    if (playingVideo && playingVideo !== videoId) {
+      // Pause any other playing video
+      const otherVideo = document.querySelector(`video[data-video-id="${playingVideo}"]`)
+      if (otherVideo) {
+        otherVideo.pause()
+        otherVideo.controls = false
+      }
+    }
+    setPlayingVideo(videoId)
+  }
+
+  const handleVideoPause = (videoId) => {
+    if (playingVideo === videoId) {
+      setPlayingVideo(null)
+    }
+  }
 
   // Group items by Subject -> Chapter
   const grouped = items.reduce((acc, item) => {
@@ -342,6 +362,9 @@ export default function Lectures() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {lectures.map((lecture, lectureIndex) => {
                         const isLocked = lecture.isPremium && !user?.isPremium
+                        const videoId = `${lecture._id || lecture.id}`
+                        const isPlaying = playingVideo === videoId
+                        
                         return (
                           <motion.div
                             key={lecture._id || lecture.id}
@@ -376,15 +399,60 @@ export default function Lectures() {
 
                                 {/* Video Preview */}
                                 {lecture.type === 'file' && !isLocked ? (
-                                  <div className="relative rounded-xl overflow-hidden mb-4 bg-amber-100 dark:bg-amber-900/20 aspect-video">
+                                  <div className="relative rounded-xl overflow-hidden mb-4 bg-amber-100 dark:bg-amber-900/20 aspect-video group/video">
                                     <video 
+                                      data-video-id={videoId}
                                       src={`${SERVER_ORIGIN}${lecture.file_path}`} 
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full object-cover cursor-pointer"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        const video = e.target
+                                        if (video.paused) {
+                                          video.play()
+                                          handleVideoPlay(videoId)
+                                          video.controls = true
+                                        } else {
+                                          video.pause()
+                                          handleVideoPause(videoId)
+                                          video.controls = false
+                                        }
+                                      }}
+                                      onPlay={() => handleVideoPlay(videoId)}
+                                      onPause={() => handleVideoPause(videoId)}
+                                      controls={isPlaying}
+                                      playsInline
                                     />
-                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                        <PlayCircle className="w-6 h-6 text-white" />
+                                    {!isPlaying && (
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-center justify-center cursor-pointer"
+                                        onClick={(e) => {
+                                          e.preventDefault()
+                                          const video = e.target.closest('.group/video').querySelector('video')
+                                          video.play()
+                                          handleVideoPlay(videoId)
+                                          video.controls = true
+                                        }}
+                                      >
+                                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover/video:scale-110 transition-transform">
+                                          <PlayCircle className="w-8 h-8 text-white" />
+                                        </div>
                                       </div>
+                                    )}
+                                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                      <div className="text-xs text-white/80 bg-black/40 backdrop-blur-sm px-2 py-1 rounded">
+                                        Click to play
+                                      </div>
+                                      {!isPlaying && (
+                                        <a
+                                          href={`${SERVER_ORIGIN}${lecture.file_path}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-white/80 bg-black/40 backdrop-blur-sm px-2 py-1 rounded hover:bg-black/60 transition-colors flex items-center gap-1"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Download className="w-3 h-3" />
+                                          Download
+                                        </a>
+                                      )}
                                     </div>
                                   </div>
                                 ) : lecture.type === 'file' && isLocked ? (
@@ -423,6 +491,50 @@ export default function Lectures() {
                                       <LinkIcon className="w-4 h-4" />
                                       Open Video Link
                                     </a>
+                                  ) : lecture.type === 'file' ? (
+                                    <div className="flex items-center justify-between gap-2">
+                                      <button
+                                        onClick={() => {
+                                          const video = document.querySelector(`video[data-video-id="${videoId}"]`)
+                                          if (video) {
+                                            if (video.paused) {
+                                              video.play()
+                                              handleVideoPlay(videoId)
+                                              video.controls = true
+                                            } else {
+                                              video.pause()
+                                              handleVideoPause(videoId)
+                                              video.controls = false
+                                            }
+                                          }
+                                        }}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-semibold transition-all duration-300 hover:scale-[1.02] flex-1 justify-center"
+                                      >
+                                        {isPlaying ? (
+                                          <>
+                                            <div className="w-4 h-4 flex items-center justify-center">
+                                              <div className="w-1.5 h-3.5 bg-white"></div>
+                                              <div className="w-1.5 h-3.5 bg-white ml-0.5"></div>
+                                            </div>
+                                            Pause
+                                          </>
+                                        ) : (
+                                          <>
+                                            <PlayCircle className="w-4 h-4" />
+                                            Play Video
+                                          </>
+                                        )}
+                                      </button>
+                                      <a
+                                        href={`${SERVER_ORIGIN}${lecture.file_path}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-semibold transition-all duration-300 hover:scale-[1.02] flex-1 justify-center"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                        Download
+                                      </a>
+                                    </div>
                                   ) : (
                                     <div className="flex items-center justify-center gap-2 text-sm text-amber-600/70 dark:text-amber-400/70">
                                       <Video className="w-4 h-4" />

@@ -25,6 +25,9 @@ export default function ManageBooks() {
     const [imageFile, setImageFile] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
 
+    // Your backend URL
+    const BACKEND_URL = 'https://concept-master-1.onrender.com'
+
     useEffect(() => {
         fetchBooks()
     }, [])
@@ -107,7 +110,8 @@ export default function ManageBooks() {
                 features: book.features?.join(', ') || '',
                 discount: book.discount || 0
             })
-           setImagePreview(book.coverImage ? `${book.coverImage}` : null)
+            // FIXED LINE: Add backend URL prefix
+            setImagePreview(book.coverImage ? `${BACKEND_URL}${book.coverImage}` : null)
         } else {
             setCurrentBook(null)
             setFormData({
@@ -189,11 +193,15 @@ export default function ManageBooks() {
                         >
                             <Card className="overflow-hidden border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 hover:shadow-xl transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700">
                                 <div className="aspect-[3/4] bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 relative overflow-hidden">
-                                   <img
-    src={book.coverImage ? `${book.coverImage}` : '/images/books/placeholder.jpg'}
-    alt={book.title}
-    className="w-full h-full object-cover"
-/>
+                                    {/* FIXED LINE: Add backend URL prefix */}
+                                    <img
+                                        src={book.coverImage ? `${BACKEND_URL}${book.coverImage}` : '/images/books/placeholder.jpg'}
+                                        alt={book.title}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            e.target.src = '/images/books/placeholder.jpg'
+                                        }}
+                                    />
                                     {book.discount > 0 && (
                                         <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-2 py-1 rounded-full">
                                             {book.discount}% OFF

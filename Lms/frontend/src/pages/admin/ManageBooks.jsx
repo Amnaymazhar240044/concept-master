@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Book, Plus, Pencil, Trash2, Upload, X, Sparkles, Award, Target, Brain, Shield, Star } from 'lucide-react'
+import { Book, Plus, Pencil, Trash2, Upload, X } from 'lucide-react'
 import api from '../../lib/api'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
@@ -25,8 +25,8 @@ export default function ManageBooks() {
     const [imageFile, setImageFile] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
 
-    // Your backend URL
-    const BACKEND_URL = 'https://concept-master-1.onrender.com'
+    // Use environment variable for backend URL
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://concept-master-1.onrender.com'
 
     useEffect(() => {
         fetchBooks()
@@ -97,6 +97,22 @@ export default function ManageBooks() {
         }
     }
 
+    // Helper function to get image URL
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return '/images/books/placeholder.jpg'
+        
+        // Check if it's already a full URL
+        if (imagePath.startsWith('http')) return imagePath
+        
+        // Check if it starts with a slash
+        if (imagePath.startsWith('/')) {
+            return `${BACKEND_URL}${imagePath}`
+        }
+        
+        // Add slash and prefix
+        return `${BACKEND_URL}/${imagePath}`
+    }
+
     const openModal = (book = null) => {
         if (book) {
             setCurrentBook(book)
@@ -110,8 +126,8 @@ export default function ManageBooks() {
                 features: book.features?.join(', ') || '',
                 discount: book.discount || 0
             })
-            // FIXED LINE: Add backend URL prefix
-            setImagePreview(book.coverImage ? `${BACKEND_URL}${book.coverImage}` : null)
+            // Use helper function for image preview
+            setImagePreview(book.coverImage ? getImageUrl(book.coverImage) : null)
         } else {
             setCurrentBook(null)
             setFormData({
@@ -193,9 +209,9 @@ export default function ManageBooks() {
                         >
                             <Card className="overflow-hidden border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 hover:shadow-xl transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700">
                                 <div className="aspect-[3/4] bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 relative overflow-hidden">
-                                    {/* FIXED LINE: Add backend URL prefix */}
+                                    {/* Use helper function for image URL */}
                                     <img
-                                        src={book.coverImage ? `${BACKEND_URL}${book.coverImage}` : '/images/books/placeholder.jpg'}
+                                        src={getImageUrl(book.coverImage)}
                                         alt={book.title}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {

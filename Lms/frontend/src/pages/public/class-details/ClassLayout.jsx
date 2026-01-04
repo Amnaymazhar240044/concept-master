@@ -11,6 +11,9 @@ import {
     ChevronLeft,
     GraduationCap,
     ArrowLeft,
+    Calendar,
+    MessageSquare,
+    Users,
     Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -45,7 +48,8 @@ export default function ClassLayout() {
         { to: `/class/${classId}/lectures`, label: 'Lectures', icon: PlayCircle },
         { to: `/class/${classId}/quizzes`, label: 'Quizzes', icon: CheckCircle },
         { to: `/class/${classId}/books`, label: 'Books', icon: BookOpen },
-        // Assignments and Discussions removed
+        { to: `/class/${classId}/assignments`, label: 'Assignments', icon: Calendar },
+        { to: `/class/${classId}/discussions`, label: 'Discussions', icon: MessageSquare },
     ];
 
     return (
@@ -131,7 +135,24 @@ export default function ClassLayout() {
                         ))}
                     </nav>
 
-                    
+                    {/* User Progress Section */}
+                    <div className="p-4 border-t border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-100/30 to-orange-100/20 dark:from-amber-900/20 dark:to-orange-900/10">
+                        <div className="mb-2 flex justify-between items-center">
+                            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Your Progress</span>
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">65%</span>
+                        </div>
+                        <div className="w-full bg-amber-200 dark:bg-amber-900/30 rounded-full h-2 mb-3">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full w-[65%]"></div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-amber-600 dark:text-amber-400">12/20 completed</span>
+                            <span className="text-amber-700 dark:text-amber-300 font-medium">Keep going!</span>
+                        </div>
+                    </div>
+
+                   
+                        
+                      
                 </div>
             </motion.aside>
 

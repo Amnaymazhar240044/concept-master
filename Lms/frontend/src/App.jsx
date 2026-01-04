@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StudentDashboard from './pages/student/StudentDashboard.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import Notes from './pages/student/Notes.jsx'
+import NoteView from './pages/student/NoteView.jsx' // ADD THIS IMPORT
 import Lectures from './pages/student/Lectures.jsx'
 import QuizList from './pages/student/QuizList.jsx'
 import QuizDetail from './pages/student/QuizDetail.jsx'
@@ -60,7 +61,7 @@ export default function App() {
           <Route index element={<HomeOrDashboard />} />
           
           {/* PUBLIC ROUTES */}
-          <Route path="books" element={<Books />} exact /> {/* 🔥 ADDED "exact" HERE */}
+          <Route path="books" element={<Books />} exact />
           <Route path="books/detail/:bookId" element={<BookDetail />} />
           <Route path="books/:grade" element={<Books />} />
           <Route path="classes" element={<PublicClasses />} />
@@ -103,6 +104,7 @@ export default function App() {
           
           <Route path="student/notes" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
           <Route path="student/notes/:classId" element={<ProtectedRoute roles={["student"]}><Notes /></ProtectedRoute>} />
+          <Route path="student/notes/:classId/view/:noteId" element={<ProtectedRoute roles={["student"]}><NoteView /></ProtectedRoute>} /> {/* ADD THIS ROUTE */}
           <Route path="student/lectures" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
           <Route path="student/lectures/:classId" element={<ProtectedRoute roles={["student"]}><Lectures /></ProtectedRoute>} />
           <Route path="student/quizzes" element={<ProtectedRoute roles={["student"]}><QuizList /></ProtectedRoute>} />

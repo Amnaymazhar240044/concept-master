@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Book, Plus, Pencil, Trash2, Upload, X } from 'lucide-react'
+import { Book, Plus, Pencil, Trash2, Upload, X, Sparkles, Award, Target, Brain, Shield, Star } from 'lucide-react'
 import api from '../../lib/api'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
@@ -51,31 +51,15 @@ export default function ManageBooks() {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        // Simple validation
-        if (!formData.title || !formData.author || !formData.price || !formData.category) {
-            alert('Please fill all required fields: Title, Author, Price, Category')
-            return
-        }
-
         const formDataToSend = new FormData()
         formDataToSend.append('title', formData.title)
         formDataToSend.append('author', formData.author)
-        formDataToSend.append('price', Number(formData.price)) // Convert to number
+        formDataToSend.append('price', formData.price)
         formDataToSend.append('category', formData.category)
         formDataToSend.append('grade', formData.grade)
         formDataToSend.append('description', formData.description)
-        
-        // Handle features - split by comma and trim
-        if (formData.features) {
-            const featuresArray = formData.features.split(',').map(f => f.trim()).filter(f => f)
-            // Append as string (backend might expect JSON string or array)
-            formDataToSend.append('features', JSON.stringify(featuresArray))
-        } else {
-            formDataToSend.append('features', '[]')
-        }
-        
-        formDataToSend.append('discount', Number(formData.discount) || 0)
-        
+        formDataToSend.append('features', formData.features)
+        formDataToSend.append('discount', formData.discount)
         if (imageFile) {
             formDataToSend.append('coverImage', imageFile)
         }
@@ -85,20 +69,16 @@ export default function ManageBooks() {
                 await api.put(`/books/${currentBook._id}`, formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 })
-                alert('Book updated successfully!')
             } else {
                 await api.post('/books', formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 })
-                alert('Book added successfully!')
             }
-            
             fetchBooks()
             closeModal()
         } catch (err) {
             console.error('Error saving book:', err)
-            console.error('Error details:', err.response?.data)
-            alert(`Failed to save book: ${err.response?.data?.message || err.message || 'Check console for details'}`)
+            alert('Failed to save book')
         }
     }
 
@@ -107,7 +87,6 @@ export default function ManageBooks() {
 
         try {
             await api.delete(`/books/${id}`)
-            alert('Book deleted successfully!')
             fetchBooks()
         } catch (err) {
             console.error('Error deleting book:', err)
@@ -125,16 +104,10 @@ export default function ManageBooks() {
                 category: book.category,
                 grade: book.grade,
                 description: book.description || '',
-                features: Array.isArray(book.features) ? book.features.join(', ') : (book.features || ''),
+                features: book.features?.join(', ') || '',
                 discount: book.discount || 0
             })
-            // Use absolute URL for image preview
-            if (book.coverImage) {
-                const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-                setImagePreview(`${baseUrl}${book.coverImage}`)
-            } else {
-                setImagePreview(null)
-            }
+            setImagePreview(book.coverImage ? `${'http://localhost:5000'}${book.coverImage}` : null)
         } else {
             setCurrentBook(null)
             setFormData({
@@ -217,16 +190,9 @@ export default function ManageBooks() {
                             <Card className="overflow-hidden border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-amber-950/10 hover:shadow-xl transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700">
                                 <div className="aspect-[3/4] bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 relative overflow-hidden">
                                     <img
-                                        src={book.coverImage ? 
-                                            `http://localhost:5000${book.coverImage}` 
-                                            : '/images/books/placeholder.jpg'
-                                        }
+                                        src={book.coverImage ? `http://localhost:5000${book.coverImage}` : '/images/books/placeholder.jpg'}
                                         alt={book.title}
                                         className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.onerror = null
-                                            e.target.src = '/images/books/placeholder.jpg'
-                                        }}
                                     />
                                     {book.discount > 0 && (
                                         <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -333,21 +299,21 @@ export default function ManageBooks() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Input
-                                    label="Title *"
+                                    label="Title"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     required
                                     className="border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500"
                                 />
                                 <Input
-                                    label="Author *"
+                                    label="Author"
                                     value={formData.author}
                                     onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                                     required
                                     className="border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500"
                                 />
                                 <Input
-                                    label="Price (Rs) *"
+                                    label="Price (Rs)"
                                     type="number"
                                     value={formData.price}
                                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -355,7 +321,7 @@ export default function ManageBooks() {
                                     className="border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500"
                                 />
                                 <Input
-                                    label="Category *"
+                                    label="Category"
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     required

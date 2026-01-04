@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../../lib/api'
-import { ArrowLeft, Calendar, User, Download, FileText, Eye } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Download, FileText } from 'lucide-react'
+
+// Your backend URL
+const SERVER_ORIGIN = 'https://concept-master-1.onrender.com';
 
 export default function NoteView() {
   const { classId, noteId } = useParams()
@@ -9,10 +12,35 @@ export default function NoteView() {
   const [note, setNote] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Helper function for download URL
+  const getDownloadUrl = (filePath) => {
+    if (!filePath) return '#';
+    
+    console.log('Download file path:', filePath);
+    
+    // If path already has full URL
+    if (filePath.startsWith('http')) return filePath;
+    
+    // If path starts with /uploads
+    if (filePath.startsWith('/uploads')) {
+      return `${SERVER_ORIGIN}${filePath}`;
+    }
+    
+    // If path is relative
+    if (filePath.startsWith('/')) {
+      return `${SERVER_ORIGIN}${filePath}`;
+    }
+    
+    // Default - assume it's in uploads folder
+    return `${SERVER_ORIGIN}/uploads/${filePath}`;
+  };
+
   useEffect(() => {
     const fetchNote = async () => {
       try {
         const response = await api.get(`/notes/${noteId}`)
+        console.log('Note data:', response.data);
+        console.log('File path:', response.data.file_path);
         setNote(response.data)
       } catch (err) {
         console.error('Failed to fetch note:', err)
@@ -100,7 +128,7 @@ export default function NoteView() {
           {note.file_path && (
             <div className="mt-8">
               <a
-                href={note.file_path}
+                href={getDownloadUrl(note.file_path)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -108,6 +136,9 @@ export default function NoteView() {
                 <Download className="w-4 h-4" />
                 Download PDF
               </a>
+              <p className="text-sm text-gray-500 mt-2">
+                File: {note.file_path}
+              </p>
             </div>
           )}
 
